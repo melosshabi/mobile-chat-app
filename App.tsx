@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
-import React, {useEffect, useState} from 'react'
+import { StyleSheet, View } from 'react-native'
+import React from 'react'
 // Drawer
 import { NavigationContainer } from '@react-navigation/native';
 import { DrawerItem, createDrawerNavigator } from '@react-navigation/drawer';
@@ -25,6 +25,11 @@ function drawerContent({navigation}: any){
     </View>
   )
 }
+
+export type componentProps = {
+  Home:{fromSignUp:boolean} | undefined;
+}
+
 export default function App() {
 
   const Drawer = createDrawerNavigator()
@@ -32,7 +37,7 @@ export default function App() {
   return (
     <NavigationContainer>
       <Drawer.Navigator defaultStatus="open" screenOptions={{drawerStyle:{backgroundColor:colors.darkGray, shadowOffset:{width:1, height:1},shadowColor:'rgb(255, 255, 255)', shadowRadius:0, elevation:20,}, drawerActiveBackgroundColor:"rgba(255, 255, 255 .2)", headerStyle:{backgroundColor:colors.lightGray}, headerTitleStyle:{color:"white"}, headerTintColor:'white'}} drawerContent={props => drawerContent(props)}>
-        <Drawer.Screen name="Home" component={Home}/>
+        <Drawer.Screen name="Home" component={Home} initialParams={{fromSignUp: false}} options={{unmountOnBlur:true}}/>
         <Drawer.Screen name="SignIn" component={SignIn} options={{title:"Sign In", unmountOnBlur:true}}/>
         <Drawer.Screen name="SignUp" component={SignUp} options={{title:"Sign Up", unmountOnBlur:true}}/>
       </Drawer.Navigator>

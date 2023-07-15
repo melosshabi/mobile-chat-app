@@ -53,7 +53,7 @@ export default function SignIn() {
           />
          </View>
          {passwordError && (<Text style={styles.error}>{passwordError}</Text>)}
-         <Pressable onPress={handleSubmit} style={[styles.signInBtn, signInProgress ? styles.disabledBtn : {}]} disabled={signInProgress}><Text style={styles.signInBtnText}>{signInProgress ? 'Signing in' : 'Sign In'}</Text></Pressable>
+         <Pressable onPress={() => handleSubmit()} style={[styles.signInBtn, signInProgress ? styles.disabledBtn : {}]} disabled={signInProgress}><Text style={styles.signInBtnText}>{signInProgress ? 'Signing in' : 'Sign In'}</Text></Pressable>
        </View>
      )}
    </Formik>
