@@ -3,8 +3,18 @@ import React, { useState } from 'react'
 import colors from '../colors';
 import * as yup from 'yup'
 import { Formik } from 'formik';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../firebase/firebasbe-config';
+import { useNavigation } from '@react-navigation/native';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
+
+type HomeProps = {
+  Home: {fromSignUp:boolean} | undefined
+}
 
 export default function SignIn() {
+
+  const navigation = useNavigation<DrawerNavigationProp<HomeProps>>()
   const signInSchema = yup.object().shape({
     email:yup.string().email("Please enter an email"),
   })
@@ -14,7 +24,21 @@ export default function SignIn() {
   const [passwordError, setPasswordError] = useState<string>('')
 
   async function signIn(email:string, password:string){
-
+    setSignInProgress(true)
+    await signInWithEmailAndPassword(auth, email, password)
+    .then(() =>  navigation.navigate('Home', undefined))
+    .catch(err => {
+      switch(err.code){
+        case 'auth/user-not-found':
+          setEmailError("Account does not exist")
+          setSignInProgress(false)
+          break;
+        case 'auth/wrong-password':
+          setPasswordError("Incorrect Password")
+          setSignInProgress(false)
+          break;
+      }
+    })
   }
   return (
     <View style={styles.signIn}>
@@ -30,11 +54,13 @@ export default function SignIn() {
          <View style={styles.inputWrapper}>
           <TextInput
             onChangeText={handleChange('email')}
+            onChange={() => { if(emailError) setEmailError('') }}
             onBlur={handleBlur('email')}
             value={values.email}
             placeholder='Email'
             style={styles.inputs}
             autoCapitalize='none'
+            placeholderTextColor='white'
           />
          
          {errors.email && (<Text style={styles.error}>{errors.email}</Text>)}
@@ -44,15 +70,17 @@ export default function SignIn() {
          <View style={styles.inputWrapper}>
            <TextInput
             onChangeText={handleChange('password')}
+            onChange={() => { if(passwordError) setPasswordError('')}}
             onBlur={handleBlur('password')}
             value={values.password}
             placeholder='Password'
             style={styles.inputs}
             secureTextEntry={true}
             autoCapitalize='none'
+            placeholderTextColor='white'
           />
+          {passwordError && (<Text style={styles.error}>{passwordError}</Text>)}
          </View>
-         {passwordError && (<Text style={styles.error}>{passwordError}</Text>)}
          <Pressable onPress={() => handleSubmit()} style={[styles.signInBtn, signInProgress ? styles.disabledBtn : {}]} disabled={signInProgress}><Text style={styles.signInBtnText}>{signInProgress ? 'Signing in' : 'Sign In'}</Text></Pressable>
        </View>
      )}
@@ -83,7 +111,7 @@ const styles = StyleSheet.create({
   },
   inputs:{
     color:'white',
-    paddingVertical:5,
+    paddingVertical:7,
     paddingHorizontal:10,
     borderWidth:1,
     borderColor:"white",

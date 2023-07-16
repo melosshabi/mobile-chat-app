@@ -68,6 +68,7 @@ export default function SignUp() {
             placeholder='Username'
             style={styles.inputs}
             autoCapitalize='none'
+            placeholderTextColor='white'
         />
         {errors.username && (<Text style={styles.error}>{errors.username}</Text>)}
         </View>
@@ -81,6 +82,7 @@ export default function SignUp() {
             placeholder='Email'
             style={styles.inputs}
             autoCapitalize='none'
+            placeholderTextColor='white'
           />
          
          {errors.email && (<Text style={styles.error}>{errors.email}</Text>)}
@@ -97,6 +99,7 @@ export default function SignUp() {
             style={styles.inputs}
             secureTextEntry={true}
             autoCapitalize='none'
+            placeholderTextColor='white'
           />
           {errors.password && (<Text style={styles.error}>{errors.password}</Text>)}
          </View>
@@ -117,7 +120,8 @@ const styles = StyleSheet.create({
     headingText:{
         fontSize:35,
         textAlign:'center',
-        marginVertical:15
+        marginVertical:15,
+        color:'white'
     },
     form:{},
     inputWrapper:{
@@ -127,7 +131,7 @@ const styles = StyleSheet.create({
     },
     inputs:{
         color:'white',
-        paddingVertical:5,
+        paddingVertical:7,
         paddingHorizontal:10,
         borderWidth:1,
         borderColor:"white",
