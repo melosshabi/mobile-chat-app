@@ -1,14 +1,21 @@
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import {componentProps} from '../App'
-import { DrawerScreenProps } from '@react-navigation/drawer'
+import { DrawerNavigationProp, DrawerScreenProps } from '@react-navigation/drawer'
 import Snackbar from 'react-native-snackbar'
 import colors from '../colors'
 import { TextInput } from 'react-native-gesture-handler'
+import { useNavigation } from '@react-navigation/native'
 
 export type HomeProps = DrawerScreenProps<componentProps, 'Home'>
 
+type ChatsProps = {
+  Chats: {roomNumber: number};
+}
+
 export default function Home({route}: HomeProps) {
+
+  const navigation = useNavigation<DrawerNavigationProp<ChatsProps>>()
 
   useEffect(() => {
     if(route.params?.fromSignUp){
@@ -19,20 +26,23 @@ export default function Home({route}: HomeProps) {
     }
   }, [route.params])
 
-  const [selectedRoom, setSelectedRoom] = useState<string | null>(null)
+  const [selectedRoom, setSelectedRoom] = useState<string | undefined>(undefined)
 
   function handleInputChange(value: string) {
-    let newText = ''
+    let newValue = ''
     const numbers = '0123456789'
 
     for(let i = 0; i < value.length; i++){
       if(numbers.indexOf(value[i]) > -1){
-        newText += value[i];
+        newValue += value[i];
       }else{
         Alert.alert("Please enter numbers only")
       }
     }
-    setSelectedRoom(newText);
+    if(parseInt(newValue) > 100 || parseInt(newValue) < 1){
+     Alert.alert("Please enter a number between 1 and 100")
+     setSelectedRoom('')
+    }else setSelectedRoom(newValue);
   }
 
   return (
@@ -42,8 +52,8 @@ export default function Home({route}: HomeProps) {
           <Text style={styles.selectRoomTitle}>Select a Room</Text>
           <Text style={{color:'white'}}>1-100</Text>
         </View>
-        <TextInput style={styles.roomSelectionInput} keyboardType='numeric' maxLength={3} onChangeText={value => handleInputChange(value)}/>
-        <Pressable style={styles.joinRoomBtn}><Text style={{color:'white'}}>Join Room</Text></Pressable>
+        <TextInput style={styles.roomSelectionInput} keyboardType='numeric' maxLength={3} value={selectedRoom} onChangeText={value => handleInputChange(value)}/>
+        <Pressable style={styles.joinRoomBtn} onPress={() => navigation.navigate("Chats", {roomNumber: parseInt(selectedRoom as string)})}><Text style={{color:'white', fontSize:18}}>Join Room</Text></Pressable>
       </View>
       
     </View>
@@ -59,10 +69,10 @@ const styles = StyleSheet.create({
   },
   roomSelectionForm:{
     width:'90%',
-    height:'25%',
+    height:'40%',
     backgroundColor:colors.lightGray,
     alignItems:'center',
-    justifyContent:'space-around'
+    justifyContent:'space-around',
   },
   textWrapper:{
     alignItems:'center'
