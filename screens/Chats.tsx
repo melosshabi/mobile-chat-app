@@ -97,7 +97,7 @@ export default function Chats({route}: ChatsProps) {
                       messages.push({message:doc.data().message, senderID:doc.data().senderID, senderName:doc.data().senderName, 
                         senderProfilePicture:doc.data().senderProfilePicture, roomSentTo:doc.data().roomSentTo, 
                         imageName:doc.data().imageName, imageUrl:doc.data().imageUrl, videoName:doc.data().videoName, videoUrl: doc.data().videoUrl,
-                        dateSent:`${day} ${month} ${year}`, timeSent:`${hours}: ${minutes}`, docId:doc.id})
+                        dateSent:`${day} ${month} ${year}`, timeSent:`${hours}:${minutes}`, docId:doc.id})
                 })
                 setMessages(messages)
             })
@@ -109,23 +109,26 @@ export default function Chats({route}: ChatsProps) {
 
   return (
     <View style={styles.chatsWrapper}>
-      <View style={styles.chats}>
+      <View style={[styles.chats, isKeyboardVisible ? {height: '90%', backgroundColor:'red'} : {}]}>
         <View>
 
         <FlatList style={{width:"100%"}} data={messages} keyExtractor={message => message.docId} renderItem={({item}) => (
           <View style={[styles.message, item.senderID === auth.currentUser?.uid ? styles.loggedUserMessage : {}]}>
             <View style={styles.profilePictureWrapper}><Image style={styles.messageProfilePicture} source={{uri:item.senderProfilePicture}}/></View>
-                  <View style={item.senderID === auth.currentUser?.uid ? {alignItems:'flex-end', marginRight:15} : {}}>
+                  {/* Message Text */}  
+                  <View style={styles.messageTextWrapper}>
                     {item.senderID !== auth.currentUser?.uid && <Text style={styles.senderName}>{item.senderName}</Text>}
-                    <Text style={{color:'white', maxWidth:'89%', minWidth:'20%'}}>{item.message}</Text>
+                    <Text style={[styles.messageText, item.senderID === auth.currentUser?.uid ? styles.loggedUserMessageText : {}]}>{item.message}</Text>
                   </View>
+                  {/* Date */}
+                  <Text style={styles.dateSent}>{item.dateSent}, {item.timeSent}</Text>
           </View>
         )
         }/>
 
         </View>
       </View>
-      <View style={[styles.messageForm, {marginBottom: isKeyboardVisible ? 10 : 0}]}>
+      <View style={[styles.messageForm, isKeyboardVisible ? {marginBottom:55} : {}]}>
             <Pressable style={({pressed}) => [{backgroundColor: pressed ? 'rgba(0, 0, 0, .2)' : 'transparent'}, styles.addFileBtn]}><Image source={require('../images/plus.png')} style={styles.plusIcon}/></Pressable>
             <TextInput style={styles.messageInput} placeholder='Message' placeholderTextColor='rgba(255, 255, 255, .5)'/>
             <Pressable style={({pressed}) => [styles.sendButton, {backgroundColor: pressed ? 'rgba(0, 0, 0, .2)' : 'transparent'}]}><Image source={require('../images/send-button.png')} style={styles.sendButtonIcon} /></Pressable>
@@ -188,6 +191,13 @@ const styles = StyleSheet.create({
       backgroundColor:colors.lightGray,
       borderRadius:5,
       flexDirection:'row',
+      elevation:3,
+      shadowColor:'white',
+      shadowOffset:{
+        width:100,
+        height:50,
+      },
+      position:'relative'
     },
     loggedUserMessage:{
       maxWidth:'95%',
@@ -198,7 +208,8 @@ const styles = StyleSheet.create({
     profilePictureWrapper:{
       height:'100%',
       width:'15%',
-      marginRight:10,
+      marginRight:15,
+      marginBottom:20
     },
     messageProfilePicture:{
       width:50,
@@ -207,9 +218,35 @@ const styles = StyleSheet.create({
       marginHorizontal:10
     },
     senderName:{
+      width:'100%',
       color:'white',
       fontSize:15,
       fontWeight:'bold',
-      marginBottom:10
+      textAlign:'left',
+    },
+    messageTextWrapper:{
+      minWidth:'30%',
+      maxWidth:'85%',
+      alignItems:'flex-start',
+      marginBottom:25,
+      // backgroundColor:'blue'
+    },
+    messageText:{
+      color:'white', 
+      minWidth:'30%',
+      maxWidth:'98%',
+      paddingTop:5,
+      // backgroundColor:'red',
+      textAlign:'left'
+    },
+    loggedUserMessageText:{
+      textAlign:'center',
+    },
+    dateSent:{
+      position:'absolute',
+      color:'white',
+      bottom:0,
+      left:10,
+      fontSize:13
     }
 })
