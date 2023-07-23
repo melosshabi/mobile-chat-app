@@ -52,7 +52,7 @@ export default function Home({route}: HomeProps) {
           <Text style={styles.selectRoomTitle}>Select a Room</Text>
           <Text style={{color:'white'}}>1-100</Text>
         </View>
-        <TextInput style={styles.roomSelectionInput} keyboardType='numeric' maxLength={3} value={selectedRoom} onChangeText={value => handleInputChange(value)}/>
+        <TextInput style={styles.roomSelectionInput} keyboardType='numeric' maxLength={3} value={selectedRoom} onChangeText={value => handleInputChange(value)} onSubmitEditing={() => navigation.navigate("Chats", {roomNumber: parseInt(selectedRoom as string)})}/>
         <Pressable style={styles.joinRoomBtn} onPress={() => navigation.navigate("Chats", {roomNumber: parseInt(selectedRoom as string)})}><Text style={{color:'white', fontSize:18}}>Join Room</Text></Pressable>
       </View>
       

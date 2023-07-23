@@ -1,9 +1,9 @@
-import { Image, Pressable, StyleSheet, Text, TextInput, View, Keyboard } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import { Image, Pressable, StyleSheet, Text, TextInput, View, Keyboard, Dimensions, Animated } from 'react-native'
+import React, { useEffect, useRef, useState } from 'react'
 import { DrawerScreenProps } from '@react-navigation/drawer'
 import { componentProps } from '../App'
 import colors from '../colors'
-import { collection, onSnapshot, orderBy, query, where } from 'firebase/firestore'
+import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, where } from 'firebase/firestore'
 import { auth, db } from '../firebase/firebasbe-config'
 import { FlatList } from 'react-native-gesture-handler'
 
@@ -24,10 +24,14 @@ type message = {
     timeSent:string;
 }
 
+const dvw = Dimensions.get('window').width
+const dvh = Dimensions.get('window').height
+
 export default function Chats({route}: ChatsProps) {
     
     const [isKeyboardVisible, setIsKeyboardVisible] = useState<boolean>(false)
     const [messages, setMessages] = useState<message[] | null>()
+    let flatListRef:any; 
 
     useEffect((): any => {
 
@@ -47,12 +51,18 @@ export default function Chats({route}: ChatsProps) {
                 let messages: message[] = []
 
                 snapshot.forEach(doc => {
+
+                    if(doc.data().timeSent !== null){
+
                     const date = doc.data().timeSent.toDate()
                     const day = date.getDate()
                     let month;
                     const year = date.getFullYear()
-                    const hours = date.getHours()
-                    const minutes = date.getMinutes()
+                    let hours = date.getHours()
+                    let minutes = date.getMinutes()
+
+                    if(hours === 24) hours = "00"
+                    if(minutes.toString().length === 1) minutes = `0${minutes}`
 
                     switch(date.getMonth()){
                         case 0:
@@ -94,10 +104,12 @@ export default function Chats({route}: ChatsProps) {
                         default:
                           month = "";
                       }
+
                       messages.push({message:doc.data().message, senderID:doc.data().senderID, senderName:doc.data().senderName, 
                         senderProfilePicture:doc.data().senderProfilePicture, roomSentTo:doc.data().roomSentTo, 
                         imageName:doc.data().imageName, imageUrl:doc.data().imageUrl, videoName:doc.data().videoName, videoUrl: doc.data().videoUrl,
                         dateSent:`${day} ${month} ${year}`, timeSent:`${hours}:${minutes}`, docId:doc.id})
+                    }
                 })
                 setMessages(messages)
             })
@@ -107,18 +119,44 @@ export default function Chats({route}: ChatsProps) {
         return () => mounted = false
     }, [])
 
+    const [newMessage, setNewMessage] = useState<string>("")
+
+    async function sendMessage(){
+      if(!newMessage) return
+
+      setNewMessage('')
+
+      const messagesCol = collection(db, 'messages')
+      await addDoc(messagesCol, {
+        message:newMessage,
+        senderID:auth.currentUser?.uid,
+        senderName:auth.currentUser?.displayName,
+        senderProfilePicture:auth.currentUser?.photoURL,
+        roomSentTo:route.params.roomNumber.toString(),
+        imageName:null,
+        imageUrl:null,
+        videoName:null,
+        videoUrl:null,
+        timeSent:serverTimestamp()
+      })
+    }
+
+    useEffect(() => {
+      flatListRef.scrollToEnd()
+    }, [messages])
+
   return (
     <View style={styles.chatsWrapper}>
-      <View style={[styles.chats, isKeyboardVisible ? {height: '90%', backgroundColor:'red'} : {}]}>
+      <View style={[styles.chats, isKeyboardVisible ? {height: dvh / 1.2} : {}]}>
         <View>
 
-        <FlatList style={{width:"100%"}} data={messages} keyExtractor={message => message.docId} renderItem={({item}) => (
+        <FlatList style={{width:"100%"}} data={messages} ref={ref => flatListRef = ref} onContentSizeChange={() => flatListRef.scrollToEnd()} keyExtractor={message => message.docId} renderItem={({item}) => (
           <View style={[styles.message, item.senderID === auth.currentUser?.uid ? styles.loggedUserMessage : {}]}>
             <View style={styles.profilePictureWrapper}><Image style={styles.messageProfilePicture} source={{uri:item.senderProfilePicture}}/></View>
                   {/* Message Text */}  
                   <View style={styles.messageTextWrapper}>
-                    {item.senderID !== auth.currentUser?.uid && <Text style={styles.senderName}>{item.senderName}</Text>}
-                    <Text style={[styles.messageText, item.senderID === auth.currentUser?.uid ? styles.loggedUserMessageText : {}]}>{item.message}</Text>
+                    {item.senderID !== auth.currentUser?.uid && <Text selectable={true} style={styles.senderName}>{item.senderName}</Text>}
+                    <Text selectable={true} style={[styles.messageText, item.senderID === auth.currentUser?.uid ? styles.loggedUserMessageText : {}]}>{item.message}</Text>
                   </View>
                   {/* Date */}
                   <Text style={styles.dateSent}>{item.dateSent}, {item.timeSent}</Text>
@@ -128,10 +166,10 @@ export default function Chats({route}: ChatsProps) {
 
         </View>
       </View>
-      <View style={[styles.messageForm, isKeyboardVisible ? {marginBottom:55} : {}]}>
+      <View style={[styles.messageForm, isKeyboardVisible ? {marginBottom:10} : {}]}>
             <Pressable style={({pressed}) => [{backgroundColor: pressed ? 'rgba(0, 0, 0, .2)' : 'transparent'}, styles.addFileBtn]}><Image source={require('../images/plus.png')} style={styles.plusIcon}/></Pressable>
-            <TextInput style={styles.messageInput} placeholder='Message' placeholderTextColor='rgba(255, 255, 255, .5)'/>
-            <Pressable style={({pressed}) => [styles.sendButton, {backgroundColor: pressed ? 'rgba(0, 0, 0, .2)' : 'transparent'}]}><Image source={require('../images/send-button.png')} style={styles.sendButtonIcon} /></Pressable>
+            <TextInput onSubmitEditing={() => sendMessage()} style={styles.messageInput} placeholder='Message' placeholderTextColor='rgba(255, 255, 255, .5)' value={newMessage} onChangeText={value => setNewMessage(value)}/>
+            <Pressable onPress={() => sendMessage()} style={({pressed}) => [styles.sendButton, {backgroundColor: pressed ? 'rgba(0, 0, 0, .2)' : 'transparent'}]}><Image source={require('../images/send-button.png')} style={styles.sendButtonIcon} /></Pressable>
       </View>
     </View>
   )
@@ -152,7 +190,7 @@ const styles = StyleSheet.create({
         backgroundColor:colors.lightGray,
         justifyContent:'space-between',
         flexDirection:'row',
-        paddingVertical:5
+        paddingVertical:5,
     },
     addFileBtn:{
         width:60,
@@ -185,12 +223,13 @@ const styles = StyleSheet.create({
         marginLeft:10
     },
     message:{
-      maxWidth:'95%',
       marginVertical:15,
-      paddingVertical:15,
+      paddingVertical:10,
       backgroundColor:colors.lightGray,
       borderRadius:5,
       flexDirection:'row',
+      alignSelf:'flex-start',
+      marginLeft:10,
       elevation:3,
       shadowColor:'white',
       shadowOffset:{
@@ -203,7 +242,8 @@ const styles = StyleSheet.create({
       maxWidth:'95%',
       flexDirection:'row-reverse',
       justifyContent:'flex-start',
-      marginRight:18
+      alignSelf:'flex-end',
+      marginLeft:10,
     },
     profilePictureWrapper:{
       height:'100%',
@@ -225,22 +265,20 @@ const styles = StyleSheet.create({
       textAlign:'left',
     },
     messageTextWrapper:{
-      minWidth:'30%',
-      maxWidth:'85%',
-      alignItems:'flex-start',
-      marginBottom:25,
-      // backgroundColor:'blue'
+      maxWidth:dvw / 1.25,
+      paddingHorizontal:10
     },
     messageText:{
       color:'white', 
       minWidth:'30%',
       maxWidth:'98%',
       paddingTop:5,
-      // backgroundColor:'red',
-      textAlign:'left'
+      textAlign:'left',
+      marginBottom:8
     },
     loggedUserMessageText:{
       textAlign:'center',
+      marginTop:10
     },
     dateSent:{
       position:'absolute',

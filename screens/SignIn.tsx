@@ -61,6 +61,7 @@ export default function SignIn() {
             style={styles.inputs}
             autoCapitalize='none'
             placeholderTextColor='white'
+            inputMode='email'
           />
          
          {errors.email && (<Text style={styles.error}>{errors.email}</Text>)}
