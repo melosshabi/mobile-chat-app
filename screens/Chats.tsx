@@ -6,6 +6,8 @@ import colors from '../colors'
 import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, where } from 'firebase/firestore'
 import { auth, db } from '../firebase/firebasbe-config'
 import { FlatList } from 'react-native-gesture-handler'
+import Video from 'react-native-video'
+import { useNavigation } from '@react-navigation/native'
 
 type ChatsProps = DrawerScreenProps<componentProps, 'Chats'>
 
@@ -29,9 +31,15 @@ const dvh = Dimensions.get('window').height
 
 export default function Chats({route}: ChatsProps) {
     
+    const navigation = useNavigation()
+
     const [isKeyboardVisible, setIsKeyboardVisible] = useState<boolean>(false)
     const [messages, setMessages] = useState<message[] | null>()
     let flatListRef:any; 
+
+    useEffect(() => {
+      flatListRef.scrollToEnd({animated:true})
+    }, [messages])
 
     useEffect((): any => {
 
@@ -141,12 +149,36 @@ export default function Chats({route}: ChatsProps) {
       })
     }
 
-    useEffect(() => {
-      flatListRef.scrollToEnd()
-    }, [messages])
+    type mediaToViewInFullscreen = {
+      imageUrl: string | null,
+      videoUrl: string | null
+    }
+    const [mediaToViewInFullscreen, setMediaToViewInFullScreen] = useState<mediaToViewInFullscreen | null>(null)
+
+    function toggleFullscreenMedia(newValue:mediaToViewInFullscreen | null){
+      if(newValue === null) {
+        navigation.setOptions({headerShown:true})
+        setMediaToViewInFullScreen(null)
+        return
+      }
+      navigation.setOptions({headerShown:false})
+      setMediaToViewInFullScreen(newValue)
+    }
 
   return (
     <View style={styles.chatsWrapper}>
+      {mediaToViewInFullscreen &&
+      <Pressable style={styles.fullscreenMediaWrapper} onPress={() => toggleFullscreenMedia(null)}>
+        {/* crossDownload is the styling object for the cross and download icons */}
+        {/* The button that closes the fullscreen */}
+        <Pressable onPress={() => toggleFullscreenMedia(null)} style={({pressed}) => [styles.closeFullscreenMediaBtn, pressed ? {backgroundColor:'rgba(255, 255, 255, .1)'} : {}]}><Image style={styles.crossDownload} source={require('../images/cross.png')}/></Pressable>
+        <Pressable style={({pressed}) => [styles.downloadFullscreenmediaBtn, pressed ? {backgroundColor:'rgba(255, 255, 255, .1)'} : {}]}><Image style={styles.crossDownload} source={require("../images/download.png")}/></Pressable>
+        <View style={styles.fullscreenMediaWrapper}>
+          {mediaToViewInFullscreen?.imageUrl && <Image style={styles.fullscreenImage} source={{uri:mediaToViewInFullscreen.imageUrl}}/>}
+        </View>
+      </Pressable>
+      }
+      
       <View style={[styles.chats, isKeyboardVisible ? {height: dvh / 1.2} : {}]}>
         <View>
 
@@ -157,16 +189,16 @@ export default function Chats({route}: ChatsProps) {
                   <View style={styles.messageTextWrapper}>
                     {item.senderID !== auth.currentUser?.uid && <Text selectable={true} style={styles.senderName}>{item.senderName}</Text>}
                     <Text selectable={true} style={[styles.messageText, item.senderID === auth.currentUser?.uid ? styles.loggedUserMessageText : {}]}>{item.message}</Text>
+                    {item.imageUrl && <Pressable onPress={() => toggleFullscreenMedia({imageUrl:item.imageUrl, videoUrl:null})}><Image source={{uri:item.imageUrl}} style={styles.messagesImages}/></Pressable>}
                   </View>
                   {/* Date */}
                   <Text style={styles.dateSent}>{item.dateSent}, {item.timeSent}</Text>
           </View>
         )
         }/>
-
         </View>
       </View>
-      <View style={[styles.messageForm, isKeyboardVisible ? {marginBottom:10} : {}]}>
+      <View style={[styles.messageForm, isKeyboardVisible ? {marginBottom:15} : {}]}>
             <Pressable style={({pressed}) => [{backgroundColor: pressed ? 'rgba(0, 0, 0, .2)' : 'transparent'}, styles.addFileBtn]}><Image source={require('../images/plus.png')} style={styles.plusIcon}/></Pressable>
             <TextInput onSubmitEditing={() => sendMessage()} style={styles.messageInput} placeholder='Message' placeholderTextColor='rgba(255, 255, 255, .5)' value={newMessage} onChangeText={value => setNewMessage(value)}/>
             <Pressable onPress={() => sendMessage()} style={({pressed}) => [styles.sendButton, {backgroundColor: pressed ? 'rgba(0, 0, 0, .2)' : 'transparent'}]}><Image source={require('../images/send-button.png')} style={styles.sendButtonIcon} /></Pressable>
@@ -266,7 +298,9 @@ const styles = StyleSheet.create({
     },
     messageTextWrapper:{
       maxWidth:dvw / 1.25,
-      paddingHorizontal:10
+      // paddingHorizontal:10,
+      // backgroundColor:'red',
+      marginBottom:10
     },
     messageText:{
       color:'white', 
@@ -280,11 +314,53 @@ const styles = StyleSheet.create({
       textAlign:'center',
       marginTop:10
     },
+    messagesImages:{
+      width:150,
+      height:150,
+      marginLeft:10
+    },
     dateSent:{
       position:'absolute',
       color:'white',
       bottom:0,
       left:10,
       fontSize:13
+    },
+    fullscreenMediaWrapper:{
+      height:dvh,
+      width:dvw,
+      position:'absolute',
+      top:0,
+      left:0,
+      backgroundColor:'rgba(0, 0, 0, .8)',
+      zIndex:1,
+      justifyContent:'center',
+      alignItems:'center'
+    },
+    fullscreenImage:{
+      width:300,
+      height:300
+    },
+    closeFullscreenMediaBtn:{
+      width:70,
+      height:70,
+      position:'absolute',
+      top:10,
+      left:10,
+      zIndex:2,
+      borderRadius:50,
+    },
+    crossDownload:{
+      width:70,
+      height:70
+    },
+    downloadFullscreenmediaBtn:{
+      width:70,
+      height:70,
+      position:'absolute',
+      top:10,
+      right:10,
+      zIndex:2,
+      borderRadius:50
     }
 })
