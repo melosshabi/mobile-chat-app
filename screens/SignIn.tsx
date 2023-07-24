@@ -11,7 +11,6 @@ import { DrawerNavigationProp } from '@react-navigation/drawer';
 type HomeProps = {
   Home: {fromSignUp:boolean} | undefined
 }
-
 export default function SignIn() {
 
   const navigation = useNavigation<DrawerNavigationProp<HomeProps>>()

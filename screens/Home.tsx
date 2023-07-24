@@ -73,6 +73,12 @@ const styles = StyleSheet.create({
     backgroundColor:colors.lightGray,
     alignItems:'center',
     justifyContent:'space-around',
+    elevation:5,
+    shadowColor:'white',
+    shadowOffset:{
+      width:0,
+      height:0
+    }
   },
   textWrapper:{
     alignItems:'center'

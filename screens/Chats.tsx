@@ -6,8 +6,9 @@ import colors from '../colors'
 import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, where } from 'firebase/firestore'
 import { auth, db } from '../firebase/firebasbe-config'
 import { FlatList } from 'react-native-gesture-handler'
-import Video from 'react-native-video'
 import { useNavigation } from '@react-navigation/native'
+import Video from 'react-native-video'
+import VideoPlayer from 'react-native-video-player'
 
 type ChatsProps = DrawerScreenProps<componentProps, 'Chats'>
 
@@ -189,7 +190,13 @@ export default function Chats({route}: ChatsProps) {
                   <View style={styles.messageTextWrapper}>
                     {item.senderID !== auth.currentUser?.uid && <Text selectable={true} style={styles.senderName}>{item.senderName}</Text>}
                     <Text selectable={true} style={[styles.messageText, item.senderID === auth.currentUser?.uid ? styles.loggedUserMessageText : {}]}>{item.message}</Text>
+                    {/* Message image */}
                     {item.imageUrl && <Pressable onPress={() => toggleFullscreenMedia({imageUrl:item.imageUrl, videoUrl:null})}><Image source={{uri:item.imageUrl}} style={styles.messagesImages}/></Pressable>}
+                    {/* Message Video */}
+                    {item.videoUrl && 
+                    <View>
+                      <VideoPlayer style={styles.messageVideo} video={{uri:item.videoUrl}} pauseOnPress/>
+                    </View>}
                   </View>
                   {/* Date */}
                   <Text style={styles.dateSent}>{item.dateSent}, {item.timeSent}</Text>
@@ -362,5 +369,9 @@ const styles = StyleSheet.create({
       right:10,
       zIndex:2,
       borderRadius:50
+    },
+    messageVideo:{
+      width:dvw / 1.5,
+      height:dvw / 1.5,
     }
 })
