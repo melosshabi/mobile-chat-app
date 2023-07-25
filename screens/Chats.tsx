@@ -7,8 +7,8 @@ import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, where 
 import { auth, db } from '../firebase/firebasbe-config'
 import { FlatList } from 'react-native-gesture-handler'
 import { useNavigation } from '@react-navigation/native'
-import Video from 'react-native-video'
 import VideoPlayer from 'react-native-video-player'
+// import RNfetchblob
 
 type ChatsProps = DrawerScreenProps<componentProps, 'Chats'>
 
@@ -165,17 +165,22 @@ export default function Chats({route}: ChatsProps) {
       navigation.setOptions({headerShown:false})
       setMediaToViewInFullScreen(newValue)
     }
-
+    
   return (
     <View style={styles.chatsWrapper}>
       {mediaToViewInFullscreen &&
-      <Pressable style={styles.fullscreenMediaWrapper} onPress={() => toggleFullscreenMedia(null)}>
+      <Pressable style={styles.fullscreenMediaWrapper}>
         {/* crossDownload is the styling object for the cross and download icons */}
         {/* The button that closes the fullscreen */}
         <Pressable onPress={() => toggleFullscreenMedia(null)} style={({pressed}) => [styles.closeFullscreenMediaBtn, pressed ? {backgroundColor:'rgba(255, 255, 255, .1)'} : {}]}><Image style={styles.crossDownload} source={require('../images/cross.png')}/></Pressable>
         <Pressable style={({pressed}) => [styles.downloadFullscreenmediaBtn, pressed ? {backgroundColor:'rgba(255, 255, 255, .1)'} : {}]}><Image style={styles.crossDownload} source={require("../images/download.png")}/></Pressable>
         <View style={styles.fullscreenMediaWrapper}>
           {mediaToViewInFullscreen?.imageUrl && <Image style={styles.fullscreenImage} source={{uri:mediaToViewInFullscreen.imageUrl}}/>}
+          {mediaToViewInFullscreen?.videoUrl && 
+            <View style={styles.fullscreenVideoWrapper}>
+              <VideoPlayer style={styles.fullscreenVideo} video={{uri:mediaToViewInFullscreen.videoUrl}} disableControlsAutoHide pauseOnPress autoplay/>
+            </View>
+          }
         </View>
       </Pressable>
       }
@@ -194,9 +199,9 @@ export default function Chats({route}: ChatsProps) {
                     {item.imageUrl && <Pressable onPress={() => toggleFullscreenMedia({imageUrl:item.imageUrl, videoUrl:null})}><Image source={{uri:item.imageUrl}} style={styles.messagesImages}/></Pressable>}
                     {/* Message Video */}
                     {item.videoUrl && 
-                    <View>
-                      <VideoPlayer style={styles.messageVideo} video={{uri:item.videoUrl}} pauseOnPress/>
-                    </View>}
+                    <Pressable onLongPress={() => toggleFullscreenMedia({imageUrl:null, videoUrl:item.videoUrl})}>
+                      <VideoPlayer style={styles.messageVideo} video={{uri:item.videoUrl}} pauseOnPress disableFullscreen fullScreenOnLongPress/>
+                    </Pressable>}
                   </View>
                   {/* Date */}
                   <Text style={styles.dateSent}>{item.dateSent}, {item.timeSent}</Text>
@@ -305,8 +310,6 @@ const styles = StyleSheet.create({
     },
     messageTextWrapper:{
       maxWidth:dvw / 1.25,
-      // paddingHorizontal:10,
-      // backgroundColor:'red',
       marginBottom:10
     },
     messageText:{
@@ -347,6 +350,18 @@ const styles = StyleSheet.create({
     fullscreenImage:{
       width:300,
       height:300
+    },
+    fullscreenVideoWrapper:{
+      width:'80%',
+      height:'80%',
+      justifyContent:'center',
+      alignItems:'center'
+    },
+    fullscreenVideo:{
+      minWidth: dvw / 1.3,
+      minHeight: dvw / 1.3,
+      // borderWidth:1,
+      borderColor:'white'
     },
     closeFullscreenMediaBtn:{
       width:70,
