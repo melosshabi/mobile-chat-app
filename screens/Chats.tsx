@@ -8,7 +8,9 @@ import { auth, db } from '../firebase/firebasbe-config'
 import { FlatList } from 'react-native-gesture-handler'
 import { useNavigation } from '@react-navigation/native'
 import VideoPlayer from 'react-native-video-player'
-// import RNfetchblob
+import RNFetchBlob from 'rn-fetch-blob'
+import Snackbar from 'react-native-snackbar'
+import CustomVideo from '../components/CustomVideo'
 
 type ChatsProps = DrawerScreenProps<componentProps, 'Chats'>
 
@@ -166,6 +168,35 @@ export default function Chats({route}: ChatsProps) {
       setMediaToViewInFullScreen(newValue)
     }
     
+    async function downloadMedia(){
+      const date = new Date()
+      if(mediaToViewInFullscreen?.imageUrl){
+        const pictureDir = RNFetchBlob.fs.dirs.PictureDir
+        RNFetchBlob.config({
+          addAndroidDownloads:{
+            useDownloadManager:true,
+            mime:'image',
+            path:`${pictureDir}/${Math.floor(date.getTime() + date.getSeconds() / 2)}.jpg`,
+            description:"Image download",
+            notification:true,
+            mediaScannable:true
+          }
+        }).fetch('GET', mediaToViewInFullscreen.imageUrl)
+      }else if(mediaToViewInFullscreen?.videoUrl){
+        const videoDir = RNFetchBlob.fs.dirs.DownloadDir
+        RNFetchBlob.config({
+          addAndroidDownloads:{
+            useDownloadManager:true,
+            mime:'video',
+            path:`${videoDir}/Mela's Chat App/${Math.floor(date.getTime() + date.getSeconds() / 2)}.mp4`,
+            description:"Video download",
+            notification:true,
+            mediaScannable:true
+          }
+        }).fetch('GET', mediaToViewInFullscreen?.videoUrl)
+      }
+    }
+    
   return (
     <View style={styles.chatsWrapper}>
       {mediaToViewInFullscreen &&
@@ -173,7 +204,8 @@ export default function Chats({route}: ChatsProps) {
         {/* crossDownload is the styling object for the cross and download icons */}
         {/* The button that closes the fullscreen */}
         <Pressable onPress={() => toggleFullscreenMedia(null)} style={({pressed}) => [styles.closeFullscreenMediaBtn, pressed ? {backgroundColor:'rgba(255, 255, 255, .1)'} : {}]}><Image style={styles.crossDownload} source={require('../images/cross.png')}/></Pressable>
-        <Pressable style={({pressed}) => [styles.downloadFullscreenmediaBtn, pressed ? {backgroundColor:'rgba(255, 255, 255, .1)'} : {}]}><Image style={styles.crossDownload} source={require("../images/download.png")}/></Pressable>
+        {/* Download button */}
+        <Pressable onPress={downloadMedia} style={({pressed}) => [styles.downloadFullscreenmediaBtn, pressed ? {backgroundColor:'rgba(255, 255, 255, .1)'} : {}]}><Image style={styles.crossDownload} source={require("../images/download.png")}/></Pressable>
         <View style={styles.fullscreenMediaWrapper}>
           {mediaToViewInFullscreen?.imageUrl && <Image style={styles.fullscreenImage} source={{uri:mediaToViewInFullscreen.imageUrl}}/>}
           {mediaToViewInFullscreen?.videoUrl && 
@@ -198,10 +230,7 @@ export default function Chats({route}: ChatsProps) {
                     {/* Message image */}
                     {item.imageUrl && <Pressable onPress={() => toggleFullscreenMedia({imageUrl:item.imageUrl, videoUrl:null})}><Image source={{uri:item.imageUrl}} style={styles.messagesImages}/></Pressable>}
                     {/* Message Video */}
-                    {item.videoUrl && 
-                    <Pressable onLongPress={() => toggleFullscreenMedia({imageUrl:null, videoUrl:item.videoUrl})}>
-                      <VideoPlayer style={styles.messageVideo} video={{uri:item.videoUrl}} pauseOnPress disableFullscreen fullScreenOnLongPress/>
-                    </Pressable>}
+                    {item.videoUrl && <CustomVideo uri={item.videoUrl}/>}
                   </View>
                   {/* Date */}
                   <Text style={styles.dateSent}>{item.dateSent}, {item.timeSent}</Text>
@@ -355,12 +384,11 @@ const styles = StyleSheet.create({
       width:'80%',
       height:'80%',
       justifyContent:'center',
-      alignItems:'center'
+      alignItems:'center',
     },
     fullscreenVideo:{
       minWidth: dvw / 1.3,
       minHeight: dvw / 1.3,
-      // borderWidth:1,
       borderColor:'white'
     },
     closeFullscreenMediaBtn:{
@@ -385,8 +413,4 @@ const styles = StyleSheet.create({
       zIndex:2,
       borderRadius:50
     },
-    messageVideo:{
-      width:dvw / 1.5,
-      height:dvw / 1.5,
-    }
 })
