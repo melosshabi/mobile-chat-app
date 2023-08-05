@@ -1,38 +1,89 @@
 import { Dimensions, Image, Pressable, StyleSheet, Text, View } from 'react-native'
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 import Video from 'react-native-video'
 
+type mediaToViewInFullscreen = {
+    imageUrl: string | null,
+    videoUrl: string | null
+}
+
 type Props = {
-    uri:string
+    uri:string;
+    toggleFullscreenMedia:(newValue:mediaToViewInFullscreen) => void
 }
 
 const dvw = Dimensions.get('window').width
 
-export default function CustomVideo({uri}:Props) {
+export default function CustomVideo({uri, toggleFullscreenMedia}:Props) {
 
     const [paused, setPaused] = useState(true)
+    const [progress, setProgress] = useState<number>(0)
+    const [videoFinished, setVideoFinished] = useState<boolean>(false)
     const icons = {
         playIcon:require('../images/play.png'),
-        pauseIcon:require('../images/pause.png')
+        pauseIcon:require('../images/pause.png'),
+        fullscreenIcon:require('../images/fullscreen.png')
     }
 
   return (
     <View style={{width: dvw / 1.5, height: dvw / 1.5}}>
-        <Video source={{uri}} onTouchStart={() => setPaused(prev => !prev)} resizeMode='contain' controls={false} paused={paused} style={{width:'100%', height:'100%', backgroundColor:'rgba(0, 0, 0, 0.1)'}} />
-        <View style={styles.controls}><Pressable onPress={() => setPaused(prev => !prev)} style={({pressed}) => [{backgroundColor:pressed ? 'rgba(255, 255, 255, .2)' : 'transparent'}]}><Image style={styles.controlsImages} source={paused ? icons.playIcon : icons.pauseIcon}/></Pressable></View>
+        <Video source={{uri}} resizeMode='contain' controls={false} paused={paused} style={{width:'100%', height:'100%', backgroundColor:'rgba(0, 0, 0, 0.1)'}} onProgress={progress => {
+            console.log(progress)
+            setProgress((progress.currentTime / progress.playableDuration) * 100)
+        }} 
+        onEnd={() => {
+            setPaused(true)
+            setProgress(0)
+            setVideoFinished(true)
+        }}
+        onSeek={seek => console.log("seek:", seek)}
+        />
+
+        <View style={styles.controls}>
+            {/* Play and pause button */}
+            <Pressable onPress={() => {
+                    setPaused(prev => !prev)
+                    if(videoFinished) setProgress(0)
+                    setVideoFinished(false)
+                }} style={({pressed}) => [styles.buttons, {backgroundColor:pressed ? 'rgba(255, 255, 255, .1)' : 'transparent'}]}><Image style={styles.controlsImages} source={paused ? icons.playIcon : icons.pauseIcon}/></Pressable>
+            <View style={styles.progressbarWrapper}>
+                <View style={[styles.progressbar, {width:`${progress}%`}]}></View>
+            </View>
+            {/* Fullscreen button */}
+            <Pressable style={({pressed}) => [styles.buttons, {backgroundColor:pressed ? 'rgba(255, 255, 255, .1)' : 'transparent'}]}
+                onPress={() => toggleFullscreenMedia({imageUrl:null, videoUrl:uri})}
+            ><Image source={icons.fullscreenIcon} style={styles.controlsImages}></Image></Pressable>
+        </View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
     controls:{
-        // backgroundColor:'red',
         position:'absolute',
         bottom:0,
-        width:'100%'
+        width:'100%',
+        flexDirection:'row',
+        alignItems:'center',
+        justifyContent:'space-between'
     },
     controlsImages:{
-        width:40,
-        height:40
+        width:30,
+        height:30
+    },
+    buttons:{
+        width:'20%',
+        paddingVertical:5,
+        backgroundColor:"red",
+        alignItems:'center'
+    },
+    progressbarWrapper:{
+        width:'60%',
+        height:5,
+        backgroundColor:'rgba(255, 255, 255, .1)',
+    },
+    progressbar:{
+        backgroundColor:'red',
+        height:'100%',
     }
 })

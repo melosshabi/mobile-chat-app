@@ -156,16 +156,16 @@ export default function Chats({route}: ChatsProps) {
       imageUrl: string | null,
       videoUrl: string | null
     }
-    const [mediaToViewInFullscreen, setMediaToViewInFullScreen] = useState<mediaToViewInFullscreen | null>(null)
+    const [mediaToViewInFullscreen, setMediaToViewInFullscreen] = useState<mediaToViewInFullscreen | null>(null)
 
     function toggleFullscreenMedia(newValue:mediaToViewInFullscreen | null){
       if(newValue === null) {
         navigation.setOptions({headerShown:true})
-        setMediaToViewInFullScreen(null)
+        setMediaToViewInFullscreen(null)
         return
       }
       navigation.setOptions({headerShown:false})
-      setMediaToViewInFullScreen(newValue)
+      setMediaToViewInFullscreen(newValue)
     }
     
     async function downloadMedia(){
@@ -230,7 +230,7 @@ export default function Chats({route}: ChatsProps) {
                     {/* Message image */}
                     {item.imageUrl && <Pressable onPress={() => toggleFullscreenMedia({imageUrl:item.imageUrl, videoUrl:null})}><Image source={{uri:item.imageUrl}} style={styles.messagesImages}/></Pressable>}
                     {/* Message Video */}
-                    {item.videoUrl && <CustomVideo uri={item.videoUrl}/>}
+                    {item.videoUrl && <CustomVideo uri={item.videoUrl} toggleFullscreenMedia={toggleFullscreenMedia}/>}
                   </View>
                   {/* Date */}
                   <Text style={styles.dateSent}>{item.dateSent}, {item.timeSent}</Text>
