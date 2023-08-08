@@ -1,5 +1,5 @@
-import { Dimensions, Image, Pressable, StyleSheet, Text, View } from 'react-native'
-import React, { useRef, useState } from 'react'
+import { Dimensions, Image, Pressable, StyleSheet, View } from 'react-native'
+import React, {useState } from 'react'
 import Video from 'react-native-video'
 
 type mediaToViewInFullscreen = {
@@ -26,9 +26,8 @@ export default function CustomVideo({uri, toggleFullscreenMedia}:Props) {
     }
 
   return (
-    <View style={{width: dvw / 1.5, height: dvw / 1.5}}>
-        <Video source={{uri}} resizeMode='contain' controls={false} paused={paused} style={{width:'100%', height:'100%', backgroundColor:'rgba(0, 0, 0, 0.1)'}} onProgress={progress => {
-            console.log(progress)
+    <Pressable style={{width: dvw / 1.5, height: dvw / 1.5}} onLongPress={() => console.log("baLLS")}>
+        <Video repeat={true} source={{uri}} resizeMode='contain' controls={false} paused={paused} style={{width:'100%', height:'100%', backgroundColor:'rgba(0, 0, 0, 0.1)'}} onProgress={progress => {
             setProgress((progress.currentTime / progress.playableDuration) * 100)
         }} 
         onEnd={() => {
@@ -36,7 +35,7 @@ export default function CustomVideo({uri, toggleFullscreenMedia}:Props) {
             setProgress(0)
             setVideoFinished(true)
         }}
-        onSeek={seek => console.log("seek:", seek)}
+        
         />
 
         <View style={styles.controls}>
@@ -51,10 +50,13 @@ export default function CustomVideo({uri, toggleFullscreenMedia}:Props) {
             </View>
             {/* Fullscreen button */}
             <Pressable style={({pressed}) => [styles.buttons, {backgroundColor:pressed ? 'rgba(255, 255, 255, .1)' : 'transparent'}]}
-                onPress={() => toggleFullscreenMedia({imageUrl:null, videoUrl:uri})}
+                onPress={() => {
+                    toggleFullscreenMedia({imageUrl:null, videoUrl:uri})
+                    setPaused(true)
+                }}
             ><Image source={icons.fullscreenIcon} style={styles.controlsImages}></Image></Pressable>
         </View>
-    </View>
+    </Pressable>
   )
 }
 

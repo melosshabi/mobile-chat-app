@@ -1,15 +1,14 @@
-import { Image, Pressable, StyleSheet, Text, TextInput, View, Keyboard, Dimensions, Animated } from 'react-native'
-import React, { useEffect, useRef, useState } from 'react'
+import { Image, Pressable, StyleSheet, Text, TextInput, View, Keyboard, Dimensions, Animated, Easing } from 'react-native'
+import React, { useEffect, useState } from 'react'
 import { DrawerScreenProps } from '@react-navigation/drawer'
+import { useNavigation } from '@react-navigation/native'
 import { componentProps } from '../App'
 import colors from '../colors'
 import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, where } from 'firebase/firestore'
 import { auth, db } from '../firebase/firebasbe-config'
 import { FlatList } from 'react-native-gesture-handler'
-import { useNavigation } from '@react-navigation/native'
-import VideoPlayer from 'react-native-video-player'
+import VideoPlayer from 'react-native-video-player';
 import RNFetchBlob from 'rn-fetch-blob'
-import Snackbar from 'react-native-snackbar'
 import CustomVideo from '../components/CustomVideo'
 
 type ChatsProps = DrawerScreenProps<componentProps, 'Chats'>
@@ -53,7 +52,7 @@ export default function Chats({route}: ChatsProps) {
             setIsKeyboardVisible(false)
         })
 
-        let mounted = true 
+        let mounted = true
 
         async function fetchMessages(){
             const messagesRef = collection(db, 'messages')
@@ -196,9 +195,30 @@ export default function Chats({route}: ChatsProps) {
         }).fetch('GET', mediaToViewInFullscreen?.videoUrl)
       }
     }
-    
+
+    // Code to spin the loading icon
+    const [showSpinner, setShowSpinner] = useState<boolean>(true)
+    const spinVal = new Animated.Value(0)
+
+    Animated.loop(Animated.timing(spinVal, {
+      toValue:1,
+      duration:2000,
+      easing:Easing.linear,
+      useNativeDriver:true
+    })).start()
+
+    const spin = spinVal.interpolate({
+      inputRange:[0, 1],
+      outputRange: ['0deg', '360deg']
+    })
+
   return (
     <View style={styles.chatsWrapper}>
+      {/* Spinner */}
+      {showSpinner &&
+      <View style={styles.loadingWrapper}>
+        <Animated.Image style={[styles.loadingImage, {transform:[{rotate:spin}]}]} source={require('../images/loading.png')}/>
+      </View>}
       {mediaToViewInFullscreen &&
       <Pressable style={styles.fullscreenMediaWrapper}>
         {/* crossDownload is the styling object for the cross and download icons */}
@@ -220,7 +240,11 @@ export default function Chats({route}: ChatsProps) {
       <View style={[styles.chats, isKeyboardVisible ? {height: dvh / 1.2} : {}]}>
         <View>
 
-        <FlatList style={{width:"100%"}} data={messages} ref={ref => flatListRef = ref} onContentSizeChange={() => flatListRef.scrollToEnd()} keyExtractor={message => message.docId} renderItem={({item}) => (
+        <FlatList style={{width:"100%"}} data={messages} ref={ref => flatListRef = ref} onContentSizeChange={() => {
+          flatListRef.scrollToEnd({animated:false})
+          // console.log(showSpinner)
+          if(showSpinner) setShowSpinner(false)
+        }} keyExtractor={message => message.docId} renderItem={({item}) => (
           <View style={[styles.message, item.senderID === auth.currentUser?.uid ? styles.loggedUserMessage : {}]}>
             <View style={styles.profilePictureWrapper}><Image style={styles.messageProfilePicture} source={{uri:item.senderProfilePicture}}/></View>
                   {/* Message Text */}  
@@ -230,7 +254,9 @@ export default function Chats({route}: ChatsProps) {
                     {/* Message image */}
                     {item.imageUrl && <Pressable onPress={() => toggleFullscreenMedia({imageUrl:item.imageUrl, videoUrl:null})}><Image source={{uri:item.imageUrl}} style={styles.messagesImages}/></Pressable>}
                     {/* Message Video */}
-                    {item.videoUrl && <CustomVideo uri={item.videoUrl} toggleFullscreenMedia={toggleFullscreenMedia}/>}
+                    {item.videoUrl && 
+                      <CustomVideo uri={item.videoUrl} toggleFullscreenMedia={toggleFullscreenMedia}/>
+                    }
                   </View>
                   {/* Date */}
                   <Text style={styles.dateSent}>{item.dateSent}, {item.timeSent}</Text>
@@ -254,6 +280,19 @@ const styles = StyleSheet.create({
         backgroundColor:colors.darkGray,
         justifyContent:'space-between'
     },
+    loadingWrapper:{
+      width:dvw,
+      height:dvh,
+      position:'absolute',
+      zIndex:1,
+      backgroundColor:'rgba(0, 0, 0, .99)',
+      justifyContent:'center',
+      alignItems:'center'
+    },
+    loadingImage:{
+      width:150,
+      height:150
+    },
     chats:{
         height:'92%',
     },
@@ -270,7 +309,7 @@ const styles = StyleSheet.create({
         justifyContent:'center',
         alignItems:'center',
         paddingVertical:5,
-        borderRadius:50
+        borderRadius:50,
     },
     plusIcon:{
         width:40,
