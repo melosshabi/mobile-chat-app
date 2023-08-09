@@ -1,12 +1,12 @@
-import { Image, Pressable, StyleSheet, Text, TextInput, View, Keyboard, Dimensions, Animated, Easing } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import { Image, Pressable, StyleSheet, Text, TextInput, View, Keyboard, Dimensions, Animated, Easing, SafeAreaView } from 'react-native'
+import React, { useEffect, useRef, useState } from 'react'
 import { DrawerScreenProps } from '@react-navigation/drawer'
 import { useNavigation } from '@react-navigation/native'
 import { componentProps } from '../App'
 import colors from '../colors'
 import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, where } from 'firebase/firestore'
 import { auth, db } from '../firebase/firebasbe-config'
-import { FlatList } from 'react-native-gesture-handler'
+import { ScrollView } from 'react-native-gesture-handler'
 import VideoPlayer from 'react-native-video-player';
 import RNFetchBlob from 'rn-fetch-blob'
 import CustomVideo from '../components/CustomVideo'
@@ -37,11 +37,8 @@ export default function Chats({route}: ChatsProps) {
 
     const [isKeyboardVisible, setIsKeyboardVisible] = useState<boolean>(false)
     const [messages, setMessages] = useState<message[] | null>()
-    let flatListRef:any; 
-
-    useEffect(() => {
-      flatListRef.scrollToEnd({animated:true})
-    }, [messages])
+    const scrollViewRef = useRef(null)
+    const [allowScroll, setAllowScroll] = useState<boolean>(true)
 
     useEffect((): any => {
 
@@ -212,8 +209,24 @@ export default function Chats({route}: ChatsProps) {
       outputRange: ['0deg', '360deg']
     })
 
+    // Function that checks if the scrollview has reached the bottom
+    function reachedTheEnd({layoutMeasurement, contentOffset, contentSize}: any){
+      const paddingToBottom = 20
+      return layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom
+    }
+
+    // Variable to animate the unread messages notif
+    // const moveUnreadNotif = new Animated.Value(0)
+
+    // const unreadNotifAnim = Animated.timing(moveUnreadNotif, {
+    //   toValue:40,
+    //   duration:1500,
+    //   easing:Easing.linear,
+    //   useNativeDriver: true
+    // })
+
   return (
-    <View style={styles.chatsWrapper}>
+    <SafeAreaView style={styles.chatsWrapper}>
       {/* Spinner */}
       {showSpinner &&
       <View style={styles.loadingWrapper}>
@@ -230,7 +243,7 @@ export default function Chats({route}: ChatsProps) {
           {mediaToViewInFullscreen?.imageUrl && <Image style={styles.fullscreenImage} source={{uri:mediaToViewInFullscreen.imageUrl}}/>}
           {mediaToViewInFullscreen?.videoUrl && 
             <View style={styles.fullscreenVideoWrapper}>
-              <VideoPlayer style={styles.fullscreenVideo} video={{uri:mediaToViewInFullscreen.videoUrl}} disableControlsAutoHide pauseOnPress autoplay/>
+              <VideoPlayer style={styles.fullscreenVideo} video={{uri:mediaToViewInFullscreen.videoUrl}} disableControlsAutoHide pauseOnPress/>
             </View>
           }
         </View>
@@ -239,38 +252,48 @@ export default function Chats({route}: ChatsProps) {
       
       <View style={[styles.chats, isKeyboardVisible ? {height: dvh / 1.2} : {}]}>
         <View>
+          <Pressable onPressIn={() => setAllowScroll(false)} onPressOut={() => setAllowScroll(true)}>
+          <ScrollView ref={scrollViewRef} onContentSizeChange={() => {
+            if(allowScroll) scrollViewRef.current?.scrollToEnd({animated:false})
+            if(showSpinner) setTimeout(() => {setShowSpinner(false)}, 1000)
+            }}
+            onScroll={({nativeEvent}) => {
+              if(reachedTheEnd(nativeEvent)) setAllowScroll(true)
+              else setAllowScroll(false)
+            }}
+            >
+            {messages?.map((message, index)=>(
+              <View style={[styles.message, message.senderID === auth.currentUser?.uid ? styles.loggedUserMessage : {}]} key={index}>
+                {/* Profile Picture */}
+                <View style={styles.profilePictureWrapper}><Image style={styles.messageProfilePicture} source={{uri:message.senderProfilePicture}}/></View>
 
-        <FlatList style={{width:"100%"}} data={messages} ref={ref => flatListRef = ref} onContentSizeChange={() => {
-          flatListRef.scrollToEnd({animated:false})
-          // console.log(showSpinner)
-          if(showSpinner) setShowSpinner(false)
-        }} keyExtractor={message => message.docId} renderItem={({item}) => (
-          <View style={[styles.message, item.senderID === auth.currentUser?.uid ? styles.loggedUserMessage : {}]}>
-            <View style={styles.profilePictureWrapper}><Image style={styles.messageProfilePicture} source={{uri:item.senderProfilePicture}}/></View>
-                  {/* Message Text */}  
-                  <View style={styles.messageTextWrapper}>
-                    {item.senderID !== auth.currentUser?.uid && <Text selectable={true} style={styles.senderName}>{item.senderName}</Text>}
-                    <Text selectable={true} style={[styles.messageText, item.senderID === auth.currentUser?.uid ? styles.loggedUserMessageText : {}]}>{item.message}</Text>
+                {/* Message text */}
+                <View style={styles.messageTextWrapper}>
+                    {message.senderID !== auth.currentUser?.uid && <Text selectable={true} style={styles.senderName}>{message.senderName}</Text>}
+                    <Text selectable={true} style={[styles.messageText, message.senderID === auth.currentUser?.uid ? styles.loggedUserMessageText : {}]}>{message.message}</Text>
                     {/* Message image */}
-                    {item.imageUrl && <Pressable onPress={() => toggleFullscreenMedia({imageUrl:item.imageUrl, videoUrl:null})}><Image source={{uri:item.imageUrl}} style={styles.messagesImages}/></Pressable>}
+                    {message.imageUrl && <Pressable onPress={() => toggleFullscreenMedia({imageUrl:message.imageUrl, videoUrl:null})}><Image source={{uri:message.imageUrl}} style={styles.messagesImages}/></Pressable>}
                     {/* Message Video */}
-                    {item.videoUrl && 
-                      <CustomVideo uri={item.videoUrl} toggleFullscreenMedia={toggleFullscreenMedia}/>
+                    {message.videoUrl && 
+                      <CustomVideo uri={message.videoUrl} toggleFullscreenMedia={toggleFullscreenMedia}/>
                     }
-                  </View>
-                  {/* Date */}
-                  <Text style={styles.dateSent}>{item.dateSent}, {item.timeSent}</Text>
-          </View>
-        )
-        }/>
+                </View>
+                    {/* Date */}
+                    <Text style={styles.dateSent}>{message.dateSent}, {message.timeSent}</Text>
+                </View>
+            ))}
+          </ScrollView>
+          </Pressable>
         </View>
       </View>
+      
       <View style={[styles.messageForm, isKeyboardVisible ? {marginBottom:15} : {}]}>
+        <View style={[styles.unreadMessagesNotif, {top:`-${0}%`}]}><Text style={{color:'white', fontSize:15, fontWeight:'bold', textAlign:'center'}}>Unread messages below</Text></View>
             <Pressable style={({pressed}) => [{backgroundColor: pressed ? 'rgba(0, 0, 0, .2)' : 'transparent'}, styles.addFileBtn]}><Image source={require('../images/plus.png')} style={styles.plusIcon}/></Pressable>
             <TextInput onSubmitEditing={() => sendMessage()} style={styles.messageInput} placeholder='Message' placeholderTextColor='rgba(255, 255, 255, .5)' value={newMessage} onChangeText={value => setNewMessage(value)}/>
             <Pressable onPress={() => sendMessage()} style={({pressed}) => [styles.sendButton, {backgroundColor: pressed ? 'rgba(0, 0, 0, .2)' : 'transparent'}]}><Image source={require('../images/send-button.png')} style={styles.sendButtonIcon} /></Pressable>
       </View>
-    </View>
+    </SafeAreaView>
   )
 }
 
@@ -294,7 +317,7 @@ const styles = StyleSheet.create({
       height:150
     },
     chats:{
-        height:'92%',
+        height:'91%',
     },
     messageForm:{
         height:'8%',
@@ -303,6 +326,16 @@ const styles = StyleSheet.create({
         justifyContent:'space-between',
         flexDirection:'row',
         paddingVertical:5,
+    },
+    unreadMessagesNotif:{
+      backgroundColor:'red',
+      width:dvw / 1.5,
+      position:'absolute',
+      // top:'-40%',
+      marginLeft: dvw / 6,
+      borderTopRightRadius:10,
+      borderTopLeftRadius:10,
+      zIndex:-2
     },
     addFileBtn:{
         width:60,
@@ -352,6 +385,7 @@ const styles = StyleSheet.create({
     },
     loggedUserMessage:{
       maxWidth:'95%',
+      minWidth:'35%',
       flexDirection:'row-reverse',
       justifyContent:'flex-start',
       alignSelf:'flex-end',
