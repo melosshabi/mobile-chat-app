@@ -42,6 +42,7 @@ export default function Chats({route}: ChatsProps) {
 
     useEffect((): any => {
 
+        navigation.setOptions({title:`Room ${route.params.roomNumber}`})
         Keyboard.addListener('keyboardDidShow', () => {
             setIsKeyboardVisible(true)
         })
@@ -216,14 +217,18 @@ export default function Chats({route}: ChatsProps) {
     }
 
     // Variable to animate the unread messages notif
-    // const moveUnreadNotif = new Animated.Value(0)
+    const moveUnreadNotif = new Animated.Value(20)
 
-    // const unreadNotifAnim = Animated.timing(moveUnreadNotif, {
-    //   toValue:40,
-    //   duration:1500,
-    //   easing:Easing.linear,
-    //   useNativeDriver: true
-    // })
+    const unreadNotifAnim = Animated.timing(moveUnreadNotif, {
+      toValue:55,
+      duration:500,
+      easing:Easing.linear,
+      useNativeDriver: false
+    })
+    
+    useEffect(() => {
+      if(!allowScroll) unreadNotifAnim.start()
+    } ,[messages])
 
   return (
     <SafeAreaView style={styles.chatsWrapper}>
@@ -258,7 +263,10 @@ export default function Chats({route}: ChatsProps) {
             if(showSpinner) setTimeout(() => {setShowSpinner(false)}, 1000)
             }}
             onScroll={({nativeEvent}) => {
-              if(reachedTheEnd(nativeEvent)) setAllowScroll(true)
+              if(reachedTheEnd(nativeEvent)){ 
+                setAllowScroll(true)
+                moveUnreadNotif.setValue(20)
+              }
               else setAllowScroll(false)
             }}
             >
@@ -286,9 +294,8 @@ export default function Chats({route}: ChatsProps) {
           </Pressable>
         </View>
       </View>
-      
+      <Animated.View style={[styles.unreadMessagesNotif, {bottom:moveUnreadNotif}]}><Text style={{color:'white', fontSize:15, fontWeight:'bold', textAlign:'center'}}>Unread messages below</Text></Animated.View>
       <View style={[styles.messageForm, isKeyboardVisible ? {marginBottom:15} : {}]}>
-        <View style={[styles.unreadMessagesNotif, {top:`-${0}%`}]}><Text style={{color:'white', fontSize:15, fontWeight:'bold', textAlign:'center'}}>Unread messages below</Text></View>
             <Pressable style={({pressed}) => [{backgroundColor: pressed ? 'rgba(0, 0, 0, .2)' : 'transparent'}, styles.addFileBtn]}><Image source={require('../images/plus.png')} style={styles.plusIcon}/></Pressable>
             <TextInput onSubmitEditing={() => sendMessage()} style={styles.messageInput} placeholder='Message' placeholderTextColor='rgba(255, 255, 255, .5)' value={newMessage} onChangeText={value => setNewMessage(value)}/>
             <Pressable onPress={() => sendMessage()} style={({pressed}) => [styles.sendButton, {backgroundColor: pressed ? 'rgba(0, 0, 0, .2)' : 'transparent'}]}><Image source={require('../images/send-button.png')} style={styles.sendButtonIcon} /></Pressable>
@@ -326,16 +333,16 @@ const styles = StyleSheet.create({
         justifyContent:'space-between',
         flexDirection:'row',
         paddingVertical:5,
+        zIndex:5
     },
     unreadMessagesNotif:{
       backgroundColor:'red',
       width:dvw / 1.5,
       position:'absolute',
-      // top:'-40%',
       marginLeft: dvw / 6,
       borderTopRightRadius:10,
       borderTopLeftRadius:10,
-      zIndex:-2
+      zIndex:0,
     },
     addFileBtn:{
         width:60,

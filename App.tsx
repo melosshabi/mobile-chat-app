@@ -1,8 +1,8 @@
 import 'react-native-gesture-handler'
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 // Drawer
-import { NavigationContainer, useNavigation } from '@react-navigation/native';
+import { NavigationContainer } from '@react-navigation/native';
 import { DrawerItem, createDrawerNavigator } from '@react-navigation/drawer';
 // Components
 import Home from './screens/Home';
@@ -48,12 +48,15 @@ function drawerContent({navigation}: any){
 
 export type componentProps = {
   Home:{fromSignUp:boolean} | undefined;
-  Chats:{roomNumber: number}
+  Chats:{roomNumber: number},
+  SignIn:undefined,
+  SignUp:undefined,
+  UserProfile:undefined
 }
 
 export default function App() {
 
-  const Drawer = createDrawerNavigator()
+  const Drawer = createDrawerNavigator<componentProps>()
 
   return (
     <NavigationContainer>

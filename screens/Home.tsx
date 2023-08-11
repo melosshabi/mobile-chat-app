@@ -16,6 +16,8 @@ type ChatsProps = {
 export default function Home({route}: HomeProps) {
 
   const navigation = useNavigation<DrawerNavigationProp<ChatsProps>>()
+  
+  const [selectedRoom, setSelectedRoom] = useState<string>("")
 
   useEffect(() => {
     if(route.params?.fromSignUp){
@@ -25,8 +27,6 @@ export default function Home({route}: HomeProps) {
       })
     }
   }, [route.params])
-
-  const [selectedRoom, setSelectedRoom] = useState<string | undefined>(undefined)
 
   function handleInputChange(value: string) {
     let newValue = ''

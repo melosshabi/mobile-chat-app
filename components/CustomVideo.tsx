@@ -35,7 +35,6 @@ export default function CustomVideo({uri, toggleFullscreenMedia}:Props) {
             setProgress(0)
             setVideoFinished(true)
         }}
-        
         />
 
         <View style={styles.controls}>
@@ -83,9 +82,11 @@ const styles = StyleSheet.create({
         width:'60%',
         height:5,
         backgroundColor:'rgba(255, 255, 255, .1)',
+        borderRadius:12
     },
     progressbar:{
         backgroundColor:'red',
         height:'100%',
+        borderRadius:12
     }
 })
