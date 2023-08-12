@@ -6,20 +6,26 @@ import Snackbar from 'react-native-snackbar'
 import colors from '../colors'
 import { TextInput } from 'react-native-gesture-handler'
 import { useNavigation } from '@react-navigation/native'
+import { auth } from '../firebase/firebasbe-config'
 
 export type HomeProps = DrawerScreenProps<componentProps, 'Home'>
 
-type ChatsProps = {
+type Props = {
   Chats: {roomNumber: number};
+  SignIn:undefined
 }
 
 export default function Home({route}: HomeProps) {
 
-  const navigation = useNavigation<DrawerNavigationProp<ChatsProps>>()
+  const navigation = useNavigation<DrawerNavigationProp<Props>>()
   
   const [selectedRoom, setSelectedRoom] = useState<string>("")
 
   useEffect(() => {
+    auth.onAuthStateChanged(() => {
+      if(!auth.currentUser) navigation.navigate('SignIn', undefined)
+    })
+    
     if(route.params?.fromSignUp){
       Snackbar.show({
         text:"Account Created Successfully",

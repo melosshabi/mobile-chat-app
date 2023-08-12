@@ -5,11 +5,14 @@ import { useNavigation } from '@react-navigation/native'
 import { componentProps } from '../App'
 import colors from '../colors'
 import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, where } from 'firebase/firestore'
-import { auth, db } from '../firebase/firebasbe-config'
+import { auth, db, storage } from '../firebase/firebasbe-config'
 import { ScrollView } from 'react-native-gesture-handler'
 import VideoPlayer from 'react-native-video-player';
 import RNFetchBlob from 'rn-fetch-blob'
 import CustomVideo from '../components/CustomVideo'
+import { launchImageLibrary } from 'react-native-image-picker'
+import { getDownloadURL, ref, uploadBytes, uploadBytesResumable } from 'firebase/storage'
+import { nanoid } from 'nanoid'
 
 type ChatsProps = DrawerScreenProps<componentProps, 'Chats'>
 
@@ -129,11 +132,83 @@ export default function Chats({route}: ChatsProps) {
 
     const [newMessage, setNewMessage] = useState<string>("")
 
-    async function sendMessage(){
-      if(!newMessage) return
+    type media = {
+      url : string | undefined,
+      mediaType: string | undefined,
+      mediaName:string | undefined
+    }
+    // The variables which will hold the links to the local images or videos
+    const [imageToUpload, setImageToUpload] = useState<media | undefined>(undefined)
+    const [videoToUpload, setVideoToUpload] = useState<media | undefined>(undefined)
 
+    function selectMedia(){
+      launchImageLibrary({mediaType:'mixed'},res => {
+        if(res.assets){
+          if(res.assets[0].type === 'image/jpeg'){
+            setImageToUpload({
+              url:res.assets[0].uri,
+              mediaType:res.assets[0].type,
+              mediaName:res.assets[0].fileName
+            })
+          }else if(res.assets[0].type === 'video/mp4'){
+            setVideoToUpload({
+              url:res.assets[0].uri,
+              mediaType:res.assets[0].type,
+              mediaName:res.assets[0].fileName
+            })
+          }
+        }
+      })
+    }
+
+    async function sendMessage(){
+      if(!newMessage && !imageToUpload && !videoToUpload) return
+
+      let imageName: string | undefined | null = undefined
+      let imageUrl: string | null = null
+
+      let videoName: string | undefined | null = undefined
+      let videoUrl: string | null = null
+
+      if(imageToUpload && auth.currentUser){
+
+        const metadata = {
+          customMetadata:{
+            'uploaderName':auth.currentUser.displayName!,
+            'uploaderId':auth.currentUser.uid
+          }
+        }
+
+        imageName = imageToUpload.mediaName
+        const localUrl = await fetch(imageToUpload.url!)
+        const blob = await localUrl.blob()
+        const storageRef = ref(storage, `MessagesImages/${imageName}`)
+        await uploadBytes(storageRef, blob, metadata)
+        imageUrl = await getDownloadURL(storageRef)
+      }
+
+      if(videoToUpload && auth.currentUser){
+        const metadata = {
+          customMetadata:{
+            'uploaderName':auth.currentUser.displayName!,
+            'uploaderId':auth.currentUser.uid.toString()
+          }
+        }
+
+        videoName = videoToUpload.mediaName
+        const localUrl = await fetch(videoToUpload.url!)
+        const blob = await localUrl.blob()
+        const storageRef = ref(storage, `MessagesVideos/${videoName}`)
+        const videoUploadTask = uploadBytesResumable(storageRef, blob, metadata)
+        await videoUploadTask
+        videoUrl = await getDownloadURL(storageRef)
+      }
+      
       setNewMessage('')
 
+      imageName = imageName ?? null
+      videoName = videoName ?? null
+      
       const messagesCol = collection(db, 'messages')
       await addDoc(messagesCol, {
         message:newMessage,
@@ -141,10 +216,9 @@ export default function Chats({route}: ChatsProps) {
         senderName:auth.currentUser?.displayName,
         senderProfilePicture:auth.currentUser?.photoURL,
         roomSentTo:route.params.roomNumber.toString(),
-        imageName:null,
-        imageUrl:null,
-        videoName:null,
-        videoUrl:null,
+        imageUrl,
+        videoName,
+        videoUrl,
         timeSent:serverTimestamp()
       })
     }
@@ -255,7 +329,7 @@ export default function Chats({route}: ChatsProps) {
       </Pressable>
       }
       
-      <View style={[styles.chats, isKeyboardVisible ? {height: dvh / 1.2} : {}]}>
+      <View style={[{height: !imageToUpload ? '91%' : '79%'}, isKeyboardVisible ? {height: dvh / 1.2} : {}]}>
         <View>
           <Pressable onPressIn={() => setAllowScroll(false)} onPressOut={() => setAllowScroll(true)}>
           <ScrollView ref={scrollViewRef} onContentSizeChange={() => {
@@ -295,8 +369,17 @@ export default function Chats({route}: ChatsProps) {
         </View>
       </View>
       <Animated.View style={[styles.unreadMessagesNotif, {bottom:moveUnreadNotif}]}><Text style={{color:'white', fontSize:15, fontWeight:'bold', textAlign:'center'}}>Unread messages below</Text></Animated.View>
+      { imageToUpload || videoToUpload ?
+        <View style={styles.mediaPreview}>
+          {imageToUpload && <Image source={{uri:imageToUpload.url}} style={{width:80, height:80}}/>}
+          {videoToUpload && <View>
+              <Image source={require('../images/video.png')} style={{width:80, height:80}}/>
+              <Text style={{color:'white', textAlign:'center'}}>video</Text>
+            </View>
+            }
+        </View> : <></>}
       <View style={[styles.messageForm, isKeyboardVisible ? {marginBottom:15} : {}]}>
-            <Pressable style={({pressed}) => [{backgroundColor: pressed ? 'rgba(0, 0, 0, .2)' : 'transparent'}, styles.addFileBtn]}><Image source={require('../images/plus.png')} style={styles.plusIcon}/></Pressable>
+            <Pressable onPress={selectMedia} style={({pressed}) => [{backgroundColor: pressed ? 'rgba(0, 0, 0, .2)' : 'transparent'}, styles.addFileBtn]}><Image source={require('../images/plus.png')} style={styles.plusIcon}/></Pressable>
             <TextInput onSubmitEditing={() => sendMessage()} style={styles.messageInput} placeholder='Message' placeholderTextColor='rgba(255, 255, 255, .5)' value={newMessage} onChangeText={value => setNewMessage(value)}/>
             <Pressable onPress={() => sendMessage()} style={({pressed}) => [styles.sendButton, {backgroundColor: pressed ? 'rgba(0, 0, 0, .2)' : 'transparent'}]}><Image source={require('../images/send-button.png')} style={styles.sendButtonIcon} /></Pressable>
       </View>
@@ -323,9 +406,6 @@ const styles = StyleSheet.create({
       width:150,
       height:150
     },
-    chats:{
-        height:'91%',
-    },
     messageForm:{
         height:'8%',
         width:'100%',
@@ -333,7 +413,6 @@ const styles = StyleSheet.create({
         justifyContent:'space-between',
         flexDirection:'row',
         paddingVertical:5,
-        zIndex:5
     },
     unreadMessagesNotif:{
       backgroundColor:'red',
@@ -493,4 +572,9 @@ const styles = StyleSheet.create({
       zIndex:2,
       borderRadius:50
     },
+    mediaPreview:{
+      position:'absolute',
+      bottom:'8%',
+      flexDirection:'row'
+    }
 })
