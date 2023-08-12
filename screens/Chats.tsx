@@ -12,7 +12,6 @@ import RNFetchBlob from 'rn-fetch-blob'
 import CustomVideo from '../components/CustomVideo'
 import { launchImageLibrary } from 'react-native-image-picker'
 import { getDownloadURL, ref, uploadBytes, uploadBytesResumable } from 'firebase/storage'
-import { nanoid } from 'nanoid'
 
 type ChatsProps = DrawerScreenProps<componentProps, 'Chats'>
 
@@ -208,7 +207,7 @@ export default function Chats({route}: ChatsProps) {
 
       imageName = imageName ?? null
       videoName = videoName ?? null
-      
+
       const messagesCol = collection(db, 'messages')
       await addDoc(messagesCol, {
         message:newMessage,
