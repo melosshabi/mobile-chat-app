@@ -65,7 +65,7 @@ export default function App() {
         <Drawer.Screen name="SignIn" component={SignIn} options={{title:"Sign In", unmountOnBlur:true}}/>
         <Drawer.Screen name="SignUp" component={SignUp} options={{title:"Sign Up", unmountOnBlur:true}}/>
         <Drawer.Screen name="UserProfile" component={UserProfile} options={{title:"My Profile"}}/>
-        <Drawer.Screen name="Chats" component={Chats}/>
+        <Drawer.Screen name="Chats" component={Chats} options={{unmountOnBlur:true}}/>
       </Drawer.Navigator>
     </NavigationContainer>
   )

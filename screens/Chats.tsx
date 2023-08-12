@@ -2,16 +2,18 @@ import { Image, Pressable, StyleSheet, Text, TextInput, View, Keyboard, Dimensio
 import React, { useEffect, useRef, useState } from 'react'
 import { DrawerScreenProps } from '@react-navigation/drawer'
 import { useNavigation } from '@react-navigation/native'
+import { ScrollView } from 'react-native-gesture-handler'
 import { componentProps } from '../App'
 import colors from '../colors'
+// Firebase
 import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, where } from 'firebase/firestore'
+import { getDownloadURL, ref, uploadBytes, uploadBytesResumable } from 'firebase/storage'
 import { auth, db, storage } from '../firebase/firebasbe-config'
-import { ScrollView } from 'react-native-gesture-handler'
 import VideoPlayer from 'react-native-video-player';
 import RNFetchBlob from 'rn-fetch-blob'
 import CustomVideo from '../components/CustomVideo'
 import { launchImageLibrary } from 'react-native-image-picker'
-import { getDownloadURL, ref, uploadBytes, uploadBytesResumable } from 'firebase/storage'
+
 
 type ChatsProps = DrawerScreenProps<componentProps, 'Chats'>
 
@@ -136,9 +138,15 @@ export default function Chats({route}: ChatsProps) {
       mediaType: string | undefined,
       mediaName:string | undefined
     }
+
+    // This variable is used to decide whether to render the file preview or not
+    const [fileSelected, setFileSelected] = useState<boolean>(false)
     // The variables which will hold the links to the local images or videos
     const [imageToUpload, setImageToUpload] = useState<media | undefined>(undefined)
     const [videoToUpload, setVideoToUpload] = useState<media | undefined>(undefined)
+    // This variable is used to render the upload progress bar
+    const [showUploadProgress, setShowUploadProgress] = useState<boolean>(false)
+    const [videoUploadProgress, setVideoUploadProgress] = useState<number>(0)
 
     function selectMedia(){
       launchImageLibrary({mediaType:'mixed'},res => {
@@ -149,12 +157,14 @@ export default function Chats({route}: ChatsProps) {
               mediaType:res.assets[0].type,
               mediaName:res.assets[0].fileName
             })
+            setFileSelected(true)
           }else if(res.assets[0].type === 'video/mp4'){
             setVideoToUpload({
               url:res.assets[0].uri,
               mediaType:res.assets[0].type,
               mediaName:res.assets[0].fileName
             })
+            setFileSelected(true)
           }
         }
       })
@@ -170,7 +180,7 @@ export default function Chats({route}: ChatsProps) {
       let videoUrl: string | null = null
 
       if(imageToUpload && auth.currentUser){
-
+        setFileSelected(false)
         const metadata = {
           customMetadata:{
             'uploaderName':auth.currentUser.displayName!,
@@ -187,6 +197,8 @@ export default function Chats({route}: ChatsProps) {
       }
 
       if(videoToUpload && auth.currentUser){
+        setFileSelected(false)
+        setShowUploadProgress(true)
         const metadata = {
           customMetadata:{
             'uploaderName':auth.currentUser.displayName!,
@@ -199,6 +211,10 @@ export default function Chats({route}: ChatsProps) {
         const blob = await localUrl.blob()
         const storageRef = ref(storage, `MessagesVideos/${videoName}`)
         const videoUploadTask = uploadBytesResumable(storageRef, blob, metadata)
+        videoUploadTask.on('state_changed', async snapshot =>{
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+          setVideoUploadProgress(progress)
+        })
         await videoUploadTask
         videoUrl = await getDownloadURL(storageRef)
       }
@@ -328,7 +344,7 @@ export default function Chats({route}: ChatsProps) {
       </Pressable>
       }
       
-      <View style={[{height: !imageToUpload ? '91%' : '79%'}, isKeyboardVisible ? {height: dvh / 1.2} : {}]}>
+      <View style={[{height: !fileSelected ? '91%' : '79%'}, isKeyboardVisible ? {height: dvh / 1.2} : {}]}>
         <View>
           <Pressable onPressIn={() => setAllowScroll(false)} onPressOut={() => setAllowScroll(true)}>
           <ScrollView ref={scrollViewRef} onContentSizeChange={() => {
@@ -368,7 +384,7 @@ export default function Chats({route}: ChatsProps) {
         </View>
       </View>
       <Animated.View style={[styles.unreadMessagesNotif, {bottom:moveUnreadNotif}]}><Text style={{color:'white', fontSize:15, fontWeight:'bold', textAlign:'center'}}>Unread messages below</Text></Animated.View>
-      { imageToUpload || videoToUpload ?
+      { fileSelected &&
         <View style={styles.mediaPreview}>
           {imageToUpload && <Image source={{uri:imageToUpload.url}} style={{width:80, height:80}}/>}
           {videoToUpload && <View>
@@ -376,7 +392,15 @@ export default function Chats({route}: ChatsProps) {
               <Text style={{color:'white', textAlign:'center'}}>video</Text>
             </View>
             }
-        </View> : <></>}
+        </View>}
+        {
+          showUploadProgress && 
+          <View style={styles.progressBarWrapper}>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressBar2, {width:videoUploadProgress}]}></View>
+            </View>
+          </View>
+        }
       <View style={[styles.messageForm, isKeyboardVisible ? {marginBottom:15} : {}]}>
             <Pressable onPress={selectMedia} style={({pressed}) => [{backgroundColor: pressed ? 'rgba(0, 0, 0, .2)' : 'transparent'}, styles.addFileBtn]}><Image source={require('../images/plus.png')} style={styles.plusIcon}/></Pressable>
             <TextInput onSubmitEditing={() => sendMessage()} style={styles.messageInput} placeholder='Message' placeholderTextColor='rgba(255, 255, 255, .5)' value={newMessage} onChangeText={value => setNewMessage(value)}/>
@@ -575,5 +599,28 @@ const styles = StyleSheet.create({
       position:'absolute',
       bottom:'8%',
       flexDirection:'row'
+    },
+    progressBarWrapper:{
+      width:'80%',
+      height:'3%',
+      backgroundColor:colors.lightGray,
+      position:'absolute',
+      marginLeft:'10%',
+      bottom:'8%',
+      borderColor:'rgba(255, 255, 255, 0.1)',
+      borderWidth:1,
+      justifyContent:'center',
+      alignItems:'center'
+    },
+    progressBar:{
+      width:'90%',
+      height:8,
+      backgroundColor:'rgba(0, 0, 0, .1)',
+      borderRadius:15
+    },
+    progressBar2:{
+      height:'100%',
+      backgroundColor:colors.darkGray,
+      borderRadius:12
     }
 })
