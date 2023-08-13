@@ -216,6 +216,7 @@ export default function Chats({route}: ChatsProps) {
           setVideoUploadProgress(progress)
         })
         await videoUploadTask
+        setShowUploadProgress(false)
         videoUrl = await getDownloadURL(storageRef)
       }
       
