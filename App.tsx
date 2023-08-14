@@ -14,6 +14,7 @@ import {auth} from './firebase/firebasbe-config'
 import { signOut } from 'firebase/auth';
 import UserProfile from './screens/UserProfile';
 import Chats from './screens/Chats';
+import OthersProfile from './screens/OthersProfile';
 
 function drawerContent({navigation}: any){
 
@@ -47,11 +48,12 @@ function drawerContent({navigation}: any){
 }
 
 export type componentProps = {
-  Home:{fromSignUp:boolean} | undefined;
-  Chats:{roomNumber: number},
-  SignIn:undefined,
-  SignUp:undefined,
+  Home:{fromSignUp:boolean} | undefined
+  Chats:{roomNumber: number}
+  SignIn:undefined
+  SignUp:undefined
   UserProfile:undefined
+  OthersProfile:{pictureUrl:string, displayName:string}
 }
 
 export default function App() {
@@ -66,6 +68,7 @@ export default function App() {
         <Drawer.Screen name="SignUp" component={SignUp} options={{title:"Sign Up", unmountOnBlur:true}}/>
         <Drawer.Screen name="UserProfile" component={UserProfile} options={{title:"My Profile"}}/>
         <Drawer.Screen name="Chats" component={Chats} options={{unmountOnBlur:true}}/>
+        <Drawer.Screen name="OthersProfile" component={OthersProfile} options={{unmountOnBlur:true}}/>
       </Drawer.Navigator>
     </NavigationContainer>
   )

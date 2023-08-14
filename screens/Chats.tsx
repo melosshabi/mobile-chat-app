@@ -1,4 +1,4 @@
-import { Image, Pressable, StyleSheet, Text, TextInput, View, Keyboard, Dimensions, Animated, Easing, SafeAreaView } from 'react-native'
+import { Image, Pressable, StyleSheet, Text, TextInput, View, Keyboard, Dimensions, Animated, Easing, SafeAreaView, FlatList } from 'react-native'
 import React, { useEffect, useRef, useState } from 'react'
 import { DrawerScreenProps } from '@react-navigation/drawer'
 import { useNavigation } from '@react-navigation/native'
@@ -13,7 +13,6 @@ import VideoPlayer from 'react-native-video-player';
 import RNFetchBlob from 'rn-fetch-blob'
 import CustomVideo from '../components/CustomVideo'
 import { launchImageLibrary } from 'react-native-image-picker'
-
 
 type ChatsProps = DrawerScreenProps<componentProps, 'Chats'>
 
@@ -36,12 +35,11 @@ const dvw = Dimensions.get('window').width
 const dvh = Dimensions.get('window').height
 
 export default function Chats({route}: ChatsProps) {
-    
     const navigation = useNavigation()
 
     const [isKeyboardVisible, setIsKeyboardVisible] = useState<boolean>(false)
     const [messages, setMessages] = useState<message[] | null>()
-    const scrollViewRef = useRef(null)
+    let flatListRef = useRef()
     const [allowScroll, setAllowScroll] = useState<boolean>(true)
 
     useEffect((): any => {
@@ -320,6 +318,11 @@ export default function Chats({route}: ChatsProps) {
       if(!allowScroll) unreadNotifAnim.start()
     } ,[messages])
 
+    function handleProfileNavigation(senderId:string, pictureUrl:string, displayName:string){
+      if(auth.currentUser && senderId === auth.currentUser.uid) navigation.navigate('UserProfile' as never)
+      navigation.navigate('OthersProfile', {pictureUrl, displayName})
+    }
+
   return (
     <SafeAreaView style={styles.chatsWrapper}>
       {/* Spinner */}
@@ -348,39 +351,39 @@ export default function Chats({route}: ChatsProps) {
       <View style={[{height: !fileSelected ? '91%' : '79%'}, isKeyboardVisible ? {height: dvh / 1.2} : {}]}>
         <View>
           <Pressable onPressIn={() => setAllowScroll(false)} onPressOut={() => setAllowScroll(true)}>
-          <ScrollView ref={scrollViewRef} onContentSizeChange={() => {
-            if(allowScroll) scrollViewRef.current?.scrollToEnd({animated:false})
-            if(showSpinner) setTimeout(() => {setShowSpinner(false)}, 1000)
-            }}
-            onScroll={({nativeEvent}) => {
-              if(reachedTheEnd(nativeEvent)){ 
-                setAllowScroll(true)
-                moveUnreadNotif.setValue(20)
-              }
-              else setAllowScroll(false)
-            }}
-            >
-            {messages?.map((message, index)=>(
-              <View style={[styles.message, message.senderID === auth.currentUser?.uid ? styles.loggedUserMessage : {}]} key={index}>
-                {/* Profile Picture */}
-                <View style={styles.profilePictureWrapper}><Image style={styles.messageProfilePicture} source={{uri:message.senderProfilePicture}}/></View>
-
-                {/* Message text */}
-                <View style={styles.messageTextWrapper}>
-                    {message.senderID !== auth.currentUser?.uid && <Text selectable={true} style={styles.senderName}>{message.senderName}</Text>}
-                    <Text selectable={true} style={[styles.messageText, message.senderID === auth.currentUser?.uid ? styles.loggedUserMessageText : {}]}>{message.message}</Text>
+          <FlatList style={{width:"100%"}} data={messages} ref={ref => flatListRef = ref} 
+          onContentSizeChange={() => {
+            if(allowScroll) flatListRef.scrollToEnd({animated:false})
+        }} onScroll={({nativeEvent}) => {
+            if(reachedTheEnd(nativeEvent)){
+              console.log('Reached the end')
+              if(showSpinner) setShowSpinner(false)
+              setAllowScroll(true)
+              moveUnreadNotif.setValue(20)
+            }
+          }}
+         keyExtractor={message => message.docId} renderItem={({item}) => (
+          <View style={[styles.message, item.senderID === auth.currentUser?.uid ? styles.loggedUserMessage : {}]}>
+            {/* The pressable which navigates to the profile of the user whose pfp got tapped on */}
+            {/* <Pressable onPress={() => handleProfileNavigation(item.senderID)}> */}
+              <Pressable onPress={() => handleProfileNavigation(item.senderID, item.senderProfilePicture, item.senderName)} style={styles.profilePictureWrapper}><Image style={styles.messageProfilePicture} source={{uri:item.senderProfilePicture}}/></Pressable>
+            {/* </Pressable> */}
+                  {/* Message Text */}  
+                  <View style={styles.messageTextWrapper}>
+                    {item.senderID !== auth.currentUser?.uid && <Text selectable={true} style={styles.senderName}>{item.senderName}</Text>}
+                    <Text selectable={true} style={[styles.messageText, item.senderID === auth.currentUser?.uid ? styles.loggedUserMessageText : {}]}>{item.message}</Text>
                     {/* Message image */}
-                    {message.imageUrl && <Pressable onPress={() => toggleFullscreenMedia({imageUrl:message.imageUrl, videoUrl:null})}><Image source={{uri:message.imageUrl}} style={styles.messagesImages}/></Pressable>}
+                    {item.imageUrl && <Pressable onPress={() => toggleFullscreenMedia({imageUrl:item.imageUrl, videoUrl:null})}><Image source={{uri:item.imageUrl}} style={styles.messagesImages}/></Pressable>}
                     {/* Message Video */}
-                    {message.videoUrl && 
-                      <CustomVideo uri={message.videoUrl} toggleFullscreenMedia={toggleFullscreenMedia}/>
+                    {item.videoUrl && 
+                      <CustomVideo uri={item.videoUrl} toggleFullscreenMedia={toggleFullscreenMedia}/>
                     }
-                </View>
-                    {/* Date */}
-                    <Text style={styles.dateSent}>{message.dateSent}, {message.timeSent}</Text>
-                </View>
-            ))}
-          </ScrollView>
+                  </View>
+                  {/* Date */}
+                  <Text style={styles.dateSent}>{item.dateSent}, {item.timeSent}</Text>
+          </View>
+        )
+        }/>
           </Pressable>
         </View>
       </View>
