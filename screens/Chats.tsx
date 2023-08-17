@@ -1,35 +1,16 @@
-import { Image, Pressable, StyleSheet, Text, TextInput, View, Keyboard, Dimensions, Animated, Easing, SafeAreaView, FlatList } from 'react-native'
+import { Image, Pressable, StyleSheet, Text, TextInput, View, Keyboard, Dimensions, Animated, Easing, SafeAreaView, FlatList, VirtualizedList } from 'react-native'
 import React, { useEffect, useRef, useState } from 'react'
 import { DrawerScreenProps } from '@react-navigation/drawer'
 import { useNavigation } from '@react-navigation/native'
-import { ScrollView } from 'react-native-gesture-handler'
-import { componentProps } from '../App'
 import colors from '../colors'
 // Firebase
 import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, where } from 'firebase/firestore'
 import { getDownloadURL, ref, uploadBytes, uploadBytesResumable } from 'firebase/storage'
 import { auth, db, storage } from '../firebase/firebasbe-config'
-import VideoPlayer from 'react-native-video-player';
-import RNFetchBlob from 'rn-fetch-blob'
-import CustomVideo from '../components/CustomVideo'
 import { launchImageLibrary } from 'react-native-image-picker'
+import Message from '../components/Message'
 
 type ChatsProps = DrawerScreenProps<componentProps, 'Chats'>
-
-type message = {
-    message: string;
-    senderID: string;
-    senderName: string;
-    senderProfilePicture: string;
-    roomSentTo: string;
-    docId:string;
-    imageName: string | null;
-    imageUrl: string | null;
-    videoName: string | null;
-    videoUrl: string | null;
-    dateSent:string;
-    timeSent:string;
-}
 
 const dvw = Dimensions.get('window').width
 const dvh = Dimensions.get('window').height
@@ -38,9 +19,23 @@ export default function Chats({route}: ChatsProps) {
     const navigation = useNavigation()
 
     const [isKeyboardVisible, setIsKeyboardVisible] = useState<boolean>(false)
-    const [messages, setMessages] = useState<message[] | null>()
-    let flatListRef = useRef()
-    const [allowScroll, setAllowScroll] = useState<boolean>(true)
+    const [messages, setMessages] = useState<messageDocType[]>([])
+
+    // Code to spin the loading icon
+    const [showSpinner, setShowSpinner] = useState<boolean>(true)
+    const spinVal = new Animated.Value(0)
+
+    Animated.loop(Animated.timing(spinVal, {
+      toValue:1,
+      duration:2000,
+      easing:Easing.linear,
+      useNativeDriver:true
+    })).start()
+
+    const spin = spinVal.interpolate({
+      inputRange:[0, 1],
+      outputRange: ['0deg', '360deg']
+    })
 
     useEffect((): any => {
 
@@ -57,9 +52,9 @@ export default function Chats({route}: ChatsProps) {
         async function fetchMessages(){
             const messagesRef = collection(db, 'messages')
             const messagesQuery = query(messagesRef, where('roomSentTo', '==', route.params.roomNumber.toString()), orderBy('timeSent'))
+            let messages: messageDocType[] = []
             onSnapshot(messagesQuery, snapshot => {
-                let messages: message[] = []
-
+                
                 snapshot.forEach(doc => {
 
                     if(doc.data().timeSent !== null){
@@ -120,8 +115,11 @@ export default function Chats({route}: ChatsProps) {
                         imageName:doc.data().imageName, imageUrl:doc.data().imageUrl, videoName:doc.data().videoName, videoUrl: doc.data().videoUrl,
                         dateSent:`${day} ${month} ${year}`, timeSent:`${hours}:${minutes}`, docId:doc.id})
                     }
+
+                    const reversedArr = messages.reverse()
+                    setMessages(reversedArr)
+                    setShowSpinner(false)
                 })
-                setMessages(messages)
             })
         }
 
@@ -130,12 +128,6 @@ export default function Chats({route}: ChatsProps) {
     }, [])
 
     const [newMessage, setNewMessage] = useState<string>("")
-
-    type media = {
-      url : string | undefined,
-      mediaType: string | undefined,
-      mediaName:string | undefined
-    }
 
     // This variable is used to decide whether to render the file preview or not
     const [fileSelected, setFileSelected] = useState<boolean>(false)
@@ -237,75 +229,11 @@ export default function Chats({route}: ChatsProps) {
       })
     }
 
-    type mediaToViewInFullscreen = {
-      imageUrl: string | null,
-      videoUrl: string | null
-    }
-    const [mediaToViewInFullscreen, setMediaToViewInFullscreen] = useState<mediaToViewInFullscreen | null>(null)
-
-    function toggleFullscreenMedia(newValue:mediaToViewInFullscreen | null){
-      if(newValue === null) {
-        navigation.setOptions({headerShown:true})
-        setMediaToViewInFullscreen(null)
-        return
-      }
-      navigation.setOptions({headerShown:false})
-      setMediaToViewInFullscreen(newValue)
-    }
-    
-    async function downloadMedia(){
-      const date = new Date()
-      if(mediaToViewInFullscreen?.imageUrl){
-        const pictureDir = RNFetchBlob.fs.dirs.PictureDir
-        RNFetchBlob.config({
-          addAndroidDownloads:{
-            useDownloadManager:true,
-            mime:'image',
-            path:`${pictureDir}/${Math.floor(date.getTime() + date.getSeconds() / 2)}.jpg`,
-            description:"Image download",
-            notification:true,
-            mediaScannable:true
-          }
-        }).fetch('GET', mediaToViewInFullscreen.imageUrl)
-      }else if(mediaToViewInFullscreen?.videoUrl){
-        const videoDir = RNFetchBlob.fs.dirs.DownloadDir
-        RNFetchBlob.config({
-          addAndroidDownloads:{
-            useDownloadManager:true,
-            mime:'video',
-            path:`${videoDir}/Mela's Chat App/${Math.floor(date.getTime() + date.getSeconds() / 2)}.mp4`,
-            description:"Video download",
-            notification:true,
-            mediaScannable:true
-          }
-        }).fetch('GET', mediaToViewInFullscreen?.videoUrl)
-      }
-    }
-
-    // Code to spin the loading icon
-    const [showSpinner, setShowSpinner] = useState<boolean>(true)
-    const spinVal = new Animated.Value(0)
-
-    Animated.loop(Animated.timing(spinVal, {
-      toValue:1,
-      duration:2000,
-      easing:Easing.linear,
-      useNativeDriver:true
-    })).start()
-
-    const spin = spinVal.interpolate({
-      inputRange:[0, 1],
-      outputRange: ['0deg', '360deg']
-    })
-
-    // Function that checks if the scrollview has reached the bottom
-    function reachedTheEnd({layoutMeasurement, contentOffset, contentSize}: any){
-      const paddingToBottom = 20
-      return layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom
-    }
-
     // Variable to animate the unread messages notif
     const moveUnreadNotif = new Animated.Value(20)
+
+    const unreadNotifValue = useRef<number>(20)
+    moveUnreadNotif.addListener((state: {value:number}) =>  unreadNotifValue.current = state.value)
 
     const unreadNotifAnim = Animated.timing(moveUnreadNotif, {
       toValue:55,
@@ -313,15 +241,12 @@ export default function Chats({route}: ChatsProps) {
       easing:Easing.linear,
       useNativeDriver: false
     })
-    
-    useEffect(() => {
-      if(!allowScroll) unreadNotifAnim.start()
-    } ,[messages])
 
-    function handleProfileNavigation(senderId:string, pictureUrl:string, displayName:string){
-      if(auth.currentUser && senderId === auth.currentUser.uid) navigation.navigate('UserProfile' as never)
-      navigation.navigate('OthersProfile', {pictureUrl, displayName})
-    }
+    // useEffect(() => {
+    //   if(messages.length > prevMessagesLength.current && flatListYAxis.current > 80 && messages[0].senderID !== auth.currentUser?.uid) unreadNotifAnim.start()
+    // } ,[messages])
+
+    const flatListYAxis = useRef(0)
 
   return (
     <SafeAreaView style={styles.chatsWrapper}>
@@ -330,61 +255,19 @@ export default function Chats({route}: ChatsProps) {
       <View style={styles.loadingWrapper}>
         <Animated.Image style={[styles.loadingImage, {transform:[{rotate:spin}]}]} source={require('../images/loading.png')}/>
       </View>}
-      {mediaToViewInFullscreen &&
-      <Pressable style={styles.fullscreenMediaWrapper}>
-        {/* crossDownload is the styling object for the cross and download icons */}
-        {/* The button that closes the fullscreen */}
-        <Pressable onPress={() => toggleFullscreenMedia(null)} style={({pressed}) => [styles.closeFullscreenMediaBtn, pressed ? {backgroundColor:'rgba(255, 255, 255, .1)'} : {}]}><Image style={styles.crossDownload} source={require('../images/cross.png')}/></Pressable>
-        {/* Download button */}
-        <Pressable onPress={downloadMedia} style={({pressed}) => [styles.downloadFullscreenmediaBtn, pressed ? {backgroundColor:'rgba(255, 255, 255, .1)'} : {}]}><Image style={styles.crossDownload} source={require("../images/download.png")}/></Pressable>
-        <View style={styles.fullscreenMediaWrapper}>
-          {mediaToViewInFullscreen?.imageUrl && <Image style={styles.fullscreenImage} source={{uri:mediaToViewInFullscreen.imageUrl}}/>}
-          {mediaToViewInFullscreen?.videoUrl && 
-            <View style={styles.fullscreenVideoWrapper}>
-              <VideoPlayer style={styles.fullscreenVideo} video={{uri:mediaToViewInFullscreen.videoUrl}} disableControlsAutoHide pauseOnPress/>
-            </View>
-          }
-        </View>
-      </Pressable>
-      }
       
       <View style={[{height: !fileSelected ? '91%' : '79%'}, isKeyboardVisible ? {height: dvh / 1.2} : {}]}>
         <View>
-          <Pressable onPressIn={() => setAllowScroll(false)} onPressOut={() => setAllowScroll(true)}>
-          <FlatList style={{width:"100%"}} data={messages} ref={ref => flatListRef = ref} 
-          onContentSizeChange={() => {
-            if(allowScroll) flatListRef.scrollToEnd({animated:false})
-        }} onScroll={({nativeEvent}) => {
-            if(reachedTheEnd(nativeEvent)){
-              console.log('Reached the end')
-              if(showSpinner) setShowSpinner(false)
-              setAllowScroll(true)
-              moveUnreadNotif.setValue(20)
-            }
-          }}
-         keyExtractor={message => message.docId} renderItem={({item}) => (
-          <View style={[styles.message, item.senderID === auth.currentUser?.uid ? styles.loggedUserMessage : {}]}>
-            {/* The pressable which navigates to the profile of the user whose pfp got tapped on */}
-            {/* <Pressable onPress={() => handleProfileNavigation(item.senderID)}> */}
-              <Pressable onPress={() => handleProfileNavigation(item.senderID, item.senderProfilePicture, item.senderName)} style={styles.profilePictureWrapper}><Image style={styles.messageProfilePicture} source={{uri:item.senderProfilePicture}}/></Pressable>
-            {/* </Pressable> */}
-                  {/* Message Text */}  
-                  <View style={styles.messageTextWrapper}>
-                    {item.senderID !== auth.currentUser?.uid && <Text selectable={true} style={styles.senderName}>{item.senderName}</Text>}
-                    <Text selectable={true} style={[styles.messageText, item.senderID === auth.currentUser?.uid ? styles.loggedUserMessageText : {}]}>{item.message}</Text>
-                    {/* Message image */}
-                    {item.imageUrl && <Pressable onPress={() => toggleFullscreenMedia({imageUrl:item.imageUrl, videoUrl:null})}><Image source={{uri:item.imageUrl}} style={styles.messagesImages}/></Pressable>}
-                    {/* Message Video */}
-                    {item.videoUrl && 
-                      <CustomVideo uri={item.videoUrl} toggleFullscreenMedia={toggleFullscreenMedia}/>
-                    }
-                  </View>
-                  {/* Date */}
-                  <Text style={styles.dateSent}>{item.dateSent}, {item.timeSent}</Text>
-          </View>
-        )
-        }/>
-          </Pressable>
+          <FlatList 
+            style={{width:"100%"}} 
+            inverted={true}
+            data={messages} 
+            onScroll={({nativeEvent}) => {
+              flatListYAxis.current = nativeEvent.contentOffset.y
+              if(nativeEvent.contentOffset.y === 0 && unreadNotifValue.current > 20) moveUnreadNotif.setValue(20)}}
+          keyExtractor={message => message.docId} renderItem={({item}) => (
+              <Message messageDoc={item} selectedRoom={route.params.roomNumber.toString()}/>
+        )}/>
         </View>
       </View>
       <Animated.View style={[styles.unreadMessagesNotif, {bottom:moveUnreadNotif}]}><Text style={{color:'white', fontSize:15, fontWeight:'bold', textAlign:'center'}}>Unread messages below</Text></Animated.View>
@@ -479,125 +362,6 @@ const styles = StyleSheet.create({
         width:40,
         height:40,
         marginLeft:10
-    },
-    message:{
-      marginVertical:15,
-      paddingVertical:10,
-      backgroundColor:colors.lightGray,
-      borderRadius:5,
-      flexDirection:'row',
-      alignSelf:'flex-start',
-      marginLeft:10,
-      elevation:3,
-      shadowColor:'white',
-      shadowOffset:{
-        width:100,
-        height:50,
-      },
-      position:'relative'
-    },
-    loggedUserMessage:{
-      maxWidth:'95%',
-      minWidth:'35%',
-      flexDirection:'row-reverse',
-      justifyContent:'flex-start',
-      alignSelf:'flex-end',
-      marginLeft:10,
-    },
-    profilePictureWrapper:{
-      height:'100%',
-      width:'15%',
-      marginRight:15,
-      marginBottom:20
-    },
-    messageProfilePicture:{
-      width:50,
-      height:50,
-      borderRadius:50,
-      marginHorizontal:10
-    },
-    senderName:{
-      width:'100%',
-      color:'white',
-      fontSize:15,
-      fontWeight:'bold',
-      textAlign:'left',
-    },
-    messageTextWrapper:{
-      maxWidth:dvw / 1.25,
-      marginBottom:10
-    },
-    messageText:{
-      color:'white', 
-      minWidth:'30%',
-      maxWidth:'98%',
-      paddingTop:5,
-      textAlign:'left',
-      marginBottom:8
-    },
-    loggedUserMessageText:{
-      textAlign:'center',
-      marginTop:10
-    },
-    messagesImages:{
-      width:150,
-      height:150,
-      marginLeft:10
-    },
-    dateSent:{
-      position:'absolute',
-      color:'white',
-      bottom:0,
-      left:10,
-      fontSize:13
-    },
-    fullscreenMediaWrapper:{
-      height:dvh,
-      width:dvw,
-      position:'absolute',
-      top:0,
-      left:0,
-      backgroundColor:'rgba(0, 0, 0, .8)',
-      zIndex:1,
-      justifyContent:'center',
-      alignItems:'center'
-    },
-    fullscreenImage:{
-      width:300,
-      height:300
-    },
-    fullscreenVideoWrapper:{
-      width:'80%',
-      height:'80%',
-      justifyContent:'center',
-      alignItems:'center',
-    },
-    fullscreenVideo:{
-      minWidth: dvw / 1.3,
-      minHeight: dvw / 1.3,
-      borderColor:'white'
-    },
-    closeFullscreenMediaBtn:{
-      width:70,
-      height:70,
-      position:'absolute',
-      top:10,
-      left:10,
-      zIndex:2,
-      borderRadius:50,
-    },
-    crossDownload:{
-      width:70,
-      height:70
-    },
-    downloadFullscreenmediaBtn:{
-      width:70,
-      height:70,
-      position:'absolute',
-      top:10,
-      right:10,
-      zIndex:2,
-      borderRadius:50
     },
     mediaPreview:{
       position:'absolute',

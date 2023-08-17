@@ -8,12 +8,12 @@ import { auth } from '../firebase/firebasbe-config';
 import { useNavigation } from '@react-navigation/native';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 
-type HomeProps = {
-  Home: {fromSignUp:boolean} | undefined
+type RoomSelectorProps = {
+  RoomSelector: {fromSignUp:boolean} | undefined
 }
 export default function SignIn() {
 
-  const navigation = useNavigation<DrawerNavigationProp<HomeProps>>()
+  const navigation = useNavigation<DrawerNavigationProp<RoomSelectorProps>>()
   const signInSchema = yup.object().shape({
     email:yup.string().email("Please enter an email"),
   })
@@ -25,7 +25,7 @@ export default function SignIn() {
   async function signIn(email:string, password:string){
     setSignInProgress(true)
     await signInWithEmailAndPassword(auth, email, password)
-    .then(() =>  navigation.navigate('Home', undefined))
+    .then(() =>  navigation.navigate('RoomSelector', undefined))
     .catch(err => {
       switch(err.code){
         case 'auth/user-not-found':

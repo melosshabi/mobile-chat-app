@@ -1,6 +1,5 @@
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
 import React, { useEffect, useState } from 'react'
-import {componentProps} from '../App'
 import { DrawerNavigationProp, DrawerScreenProps } from '@react-navigation/drawer'
 import Snackbar from 'react-native-snackbar'
 import colors from '../colors'
@@ -8,14 +7,14 @@ import { TextInput } from 'react-native-gesture-handler'
 import { useNavigation } from '@react-navigation/native'
 import { auth } from '../firebase/firebasbe-config'
 
-export type HomeProps = DrawerScreenProps<componentProps, 'Home'>
+export type HomeProps = DrawerScreenProps<componentProps, 'RoomSelector'>
 
 type Props = {
   Chats: {roomNumber: number};
   SignIn:undefined
 }
 
-export default function Home({route}: HomeProps) {
+export default function RoomSelector({route}: HomeProps) {
 
   const navigation = useNavigation<DrawerNavigationProp<Props>>()
   
@@ -59,7 +58,8 @@ export default function Home({route}: HomeProps) {
           <Text style={{color:'white'}}>1-100</Text>
         </View>
         <TextInput style={styles.roomSelectionInput} keyboardType='numeric' maxLength={3} value={selectedRoom} onChangeText={value => handleInputChange(value)} onSubmitEditing={() => navigation.navigate("Chats", {roomNumber: parseInt(selectedRoom as string)})}/>
-        <Pressable style={styles.joinRoomBtn} onPress={() => navigation.navigate("Chats", {roomNumber: parseInt(selectedRoom as string)})}><Text style={{color:'white', fontSize:18}}>Join Room</Text></Pressable>
+        <Pressable style={styles.joinRoomBtn} onPress={() => {
+          navigation.navigate("Chats", {roomNumber: parseInt(selectedRoom as string)})}}><Text style={{color:'white', fontSize:18}}>Join Room</Text></Pressable>
       </View>
       
     </View>

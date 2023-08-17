@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, Image, Dimensions, Pressable, Alert } from 'react-native'
+import { StyleSheet, Text, View, Image, Pressable, Alert } from 'react-native'
 import React, { useEffect, useState } from 'react'
 // Colors
 import colors from '../colors'
@@ -16,7 +16,6 @@ export default function UserProfile() {
 
   const navigation = useNavigation()
 
-  const [id, setId] = useState<string>("")
   const [name, setName] = useState<string>("")
   const [email, setEmail] = useState<string>("")
   const [profilePicture, setProfilePicture] = useState<string | undefined>("")
@@ -28,7 +27,6 @@ export default function UserProfile() {
     auth.onAuthStateChanged( ()=>{
       if(!auth.currentUser) navigation.navigate('SignIn' as never)
       else if(auth.currentUser.displayName && auth.currentUser.email && auth.currentUser.photoURL){
-        setId(auth.currentUser.uid)
         setName(auth.currentUser.displayName)
         setEmail(auth.currentUser.email)
         setProfilePicture(auth.currentUser.photoURL)
@@ -57,7 +55,7 @@ export default function UserProfile() {
       const metadata = {
         customMetadata:{
           'uploaderName':name,
-          'uploaderId':id
+          'uploaderId':auth.currentUser.uid
         }
       }
 
@@ -65,6 +63,22 @@ export default function UserProfile() {
       const blob = await newPicture.blob()
       const storageRef = ref(storage, `Profile Pictures/ProfilePictureOf${auth.currentUser?.uid}`)
       await uploadBytes(storageRef, blob, metadata)
+      .catch(err => {
+        if(err.code === 'storage/quota-exceeded'){
+          Snackbar.show({
+            text:"The daily quota for the database has been exceeded",
+            duration:Snackbar.LENGTH_LONG
+          })
+        }else if(err.code === 'storage/unauthorized'){
+          Snackbar.show({
+            text:"Permission Denied",
+            duration:Snackbar.LENGTH_LONG
+          })
+
+          setUploadInProgress(false)
+          setUpdateState("Upload new picture")
+        }
+      })
       setUpdateState("Fetching picture URL...")
       const newPictureUrl = await getDownloadURL(storageRef)
       setUpdateState("Updating Profile...")

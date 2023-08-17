@@ -1,9 +1,5 @@
-import { Image, StyleSheet, Text, View } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import { Image, StyleSheet, BackHandler, Text, View } from 'react-native'
 import { DrawerScreenProps } from '@react-navigation/drawer'
-import { componentProps } from '../App'
-import { storage } from '../firebase/firebasbe-config'
-import { getDownloadURL, ref } from 'firebase/storage'
 import colors from '../colors'
 import { useNavigation } from '@react-navigation/native'
 
@@ -13,6 +9,12 @@ export default function OthersProfile({route}:ProfileProps) {
 
   const navigation = useNavigation()
   navigation.setOptions({title:route.params.displayName})
+
+  BackHandler.addEventListener('hardwareBackPress', () => {
+    console.log("Pressed back")
+    navigation.navigate("Chats", {roomNumber: route.params.selectedRoom})
+    return true
+  })
 
   return (
     <View style={styles.wrapper}>
@@ -47,6 +49,6 @@ const styles = StyleSheet.create({
     image:{
         width:150,
         height:150,
-        marginBottom:25
+        marginBottom:25,
     }
 })

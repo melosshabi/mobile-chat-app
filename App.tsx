@@ -1,11 +1,11 @@
 import 'react-native-gesture-handler'
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
-import React, { useState } from 'react'
+import React from 'react'
 // Drawer
 import { NavigationContainer } from '@react-navigation/native';
 import { DrawerItem, createDrawerNavigator } from '@react-navigation/drawer';
 // Components
-import Home from './screens/Home';
+import RoomSelector from './screens/RoomSelector';
 import SignIn from './screens/SignIn'
 import colors from './colors';
 import SignUp from './screens/SignUp';
@@ -23,10 +23,12 @@ function drawerContent({navigation}: any){
     navigation.closeDrawer()
     navigation.navigate("SignIn")
   }
+
   return (
     <View style={styles.customDrawer}>
         <View>
-         {auth.currentUser && <DrawerItem label="Home" onPress={() => navigation.navigate('Home')} labelStyle={styles.text}/>}
+          {/* {selectedRoom && <DrawerItem label={`Return To Room ${selectedRoom}`} onPress={() => navigation.navigate('Chats')}/>} */}
+          {auth.currentUser && <DrawerItem label="Room Selector" onPress={() => navigation.navigate('RoomSelector')} labelStyle={styles.text}/>}
         </View>
         {!auth.currentUser && 
         <View style={styles.authOptionsWrapper}>
@@ -47,23 +49,14 @@ function drawerContent({navigation}: any){
   )
 }
 
-export type componentProps = {
-  Home:{fromSignUp:boolean} | undefined
-  Chats:{roomNumber: number}
-  SignIn:undefined
-  SignUp:undefined
-  UserProfile:undefined
-  OthersProfile:{pictureUrl:string, displayName:string}
-}
-
 export default function App() {
-
+    
   const Drawer = createDrawerNavigator<componentProps>()
 
   return (
     <NavigationContainer>
       <Drawer.Navigator screenOptions={{drawerStyle:{backgroundColor:colors.darkGray, shadowOffset:{width:1, height:1},shadowColor:'rgb(255, 255, 255)', shadowRadius:0, elevation:20,}, drawerActiveBackgroundColor:"rgba(255, 255, 255 .2)", headerStyle:{backgroundColor:colors.lightGray}, headerTitleStyle:{color:"white"}, headerTintColor:'white'}} drawerContent={props => drawerContent(props)}>
-        <Drawer.Screen name="Home" component={Home} initialParams={{fromSignUp: false}} options={{unmountOnBlur:true}}/>
+        <Drawer.Screen name="RoomSelector" component={RoomSelector} initialParams={{fromSignUp: false}} options={{unmountOnBlur:true, title:"Room Selector"}}/>
         <Drawer.Screen name="SignIn" component={SignIn} options={{title:"Sign In", unmountOnBlur:true}}/>
         <Drawer.Screen name="SignUp" component={SignUp} options={{title:"Sign Up", unmountOnBlur:true}}/>
         <Drawer.Screen name="UserProfile" component={UserProfile} options={{title:"My Profile"}}/>
@@ -108,7 +101,6 @@ const styles = StyleSheet.create({
     alignItems:'center',
     justifyContent:'space-between',
     marginBottom:10,
-    // backgroundColor:'red'
   },
   profilePicture:{
     width:50,

@@ -10,13 +10,13 @@ import {auth, storage} from '../firebase/firebasbe-config'
 import { launchImageLibrary } from 'react-native-image-picker'
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage'
 
-type HomeProps = {
-  Home: {fromSignUp:boolean} | undefined
+type RoomSelectorProps = {
+  RoomSelector: {fromSignUp:boolean} | undefined
 }
 
 export default function SignUp() {
 
-  const navigation = useNavigation<DrawerNavigationProp<HomeProps>>()
+  const navigation = useNavigation<DrawerNavigationProp<RoomSelectorProps>>()
 
   const signUpSchema = yup.object().shape({
     email:yup.string().email("Please enter an email"),
@@ -70,7 +70,7 @@ export default function SignUp() {
       await uploadBytes(storageRef, blob, metadata)
       const profilePictureUrl = await getDownloadURL(storageRef)
       await updateProfile(newUser, {displayName:username, photoURL:profilePictureUrl})
-      navigation.navigate('Home', {fromSignUp:true})
+      navigation.navigate('RoomSelector', {fromSignUp:true})
     }
   }
 
@@ -83,7 +83,7 @@ export default function SignUp() {
         onSubmit={values => signUp(values.username, values.email, values.password)}
       >
      {({ handleChange, handleBlur, handleSubmit, errors, values }) => (
-       <View style={styles.form}>
+       <View>
         {/* Username */}
         <View style={styles.inputWrapper}>
           <TextInput
@@ -152,8 +152,6 @@ const styles = StyleSheet.create({
         textAlign:'center',
         marginVertical:15,
         color:'white'
-    },
-    form:{
     },
     inputWrapper:{
         height:'16%',
