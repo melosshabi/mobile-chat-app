@@ -4,11 +4,12 @@ import CustomVideo from "./CustomVideo"
 import colors from "../colors"
 import { auth } from "../firebase/firebasbe-config"
 import { useNavigation } from "@react-navigation/native"
+import { TextInput } from "react-native-gesture-handler"
 
 const dvw = Dimensions.get('window').width
 const dvh = Dimensions.get('window').height
 
-const Message = memo(function Message({messageDoc, selectedRoom, setMediaToViewInFullscreen, setShowMessageOptions, setMessageToDelete}:messageComponentProps){
+const Message = memo(function Message({messageDoc, selectedRoom, setMediaToViewInFullscreen, setShowMessageOptions, setMessageToDelete, setMessageToEdit}:messageComponentProps){
     const navigation = useNavigation()
 
     function handleProfileNavigation(senderId:string, pictureUrl:string, displayName:string){
@@ -25,7 +26,6 @@ const Message = memo(function Message({messageDoc, selectedRoom, setMediaToViewI
         navigation.setOptions({headerShown:false})
         setMediaToViewInFullscreen(newValue)
       }
-
     return (
         <View>
           <Pressable onLongPress={() => {
@@ -36,6 +36,10 @@ const Message = memo(function Message({messageDoc, selectedRoom, setMediaToViewI
                 imageName:!messageDoc.imageName ? null : messageDoc.imageName,
                 videoName:!messageDoc.videoName ? null : messageDoc.videoName,
               })
+              setMessageToEdit({
+                messageDocId:messageDoc.docId,
+                messageContent:messageDoc.message
+              })
             }
             }} style={{marginVertical:5}}>
             <View style={[styles.message, messageDoc.senderID === auth.currentUser?.uid ? styles.loggedUserMessage : {}]}>
@@ -44,7 +48,7 @@ const Message = memo(function Message({messageDoc, selectedRoom, setMediaToViewI
                     {/* Message Text */}  
                     <View style={styles.messageTextWrapper}>
                       {messageDoc.senderID !== auth.currentUser?.uid && <Text selectable={true} style={styles.senderName}>{messageDoc.senderName}</Text>}
-                      <Text selectable={true} style={[styles.messageText, messageDoc.senderID === auth.currentUser?.uid ? styles.loggedUserMessageText : {}]}>{messageDoc.message}</Text>
+                      <Text selectable={true} style={[styles.messageText, messageDoc.senderID === auth.currentUser?.uid ? styles.loggedUserMessageText : {}]}>{messageDoc.message} {messageDoc.edited && <Text style={styles.edited}>edited</Text>}</Text>
                       {/* Message image */}
                       {messageDoc.imageUrl && <Pressable onPress={() => toggleFullscreenMedia({imageUrl:messageDoc.imageUrl, videoUrl:null})}><Image source={{uri:messageDoc.imageUrl}} style={styles.messagesImages}/></Pressable>}
                       {/* Message Video */}
@@ -119,7 +123,8 @@ const styles = StyleSheet.create({
       },
       loggedUserMessageText:{
         textAlign:'center',
-        marginTop:10
+        marginTop:10,
+        
       },
       messagesImages:{
         width:150,
@@ -134,5 +139,8 @@ const styles = StyleSheet.create({
         left:10,
         fontSize:13
       },
-      
+      edited:{
+        fontSize:10,
+        color:'rgba(255, 255, 255, .6)',
+      }
 })

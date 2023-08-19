@@ -4,7 +4,7 @@ import { DrawerScreenProps } from '@react-navigation/drawer'
 import { useNavigation } from '@react-navigation/native'
 import colors from '../colors'
 // Firebase
-import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp, where } from 'firebase/firestore'
+import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where } from 'firebase/firestore'
 import { deleteObject, getDownloadURL, ref, uploadBytes, uploadBytesResumable } from 'firebase/storage'
 import { auth, db, storage } from '../firebase/firebasbe-config'
 import { launchImageLibrary } from 'react-native-image-picker'
@@ -115,7 +115,7 @@ export default function Chats({route}: ChatsProps) {
                       messages.unshift({message:doc.data().message, senderID:doc.data().senderID, senderName:doc.data().senderName, 
                         senderProfilePicture:doc.data().senderProfilePicture, roomSentTo:doc.data().roomSentTo, 
                         imageName:doc.data().imageName, imageUrl:doc.data().imageUrl, videoName:doc.data().videoName, videoUrl: doc.data().videoUrl,
-                        dateSent:`${day} ${month} ${year}`, timeSent:`${hours}:${minutes}`, docId:doc.id})
+                        dateSent:`${day} ${month} ${year}`, timeSent:`${hours}:${minutes}`, edited:doc.data().edited, docId:doc.id, })
                     }
                     
                     setMessages(messages)
@@ -162,6 +162,12 @@ export default function Chats({route}: ChatsProps) {
     }
 
     async function sendMessage(){
+
+      if(editingMessage){
+        updateMessage()
+        return
+      }
+
       if(!newMessage && !imageToUpload && !videoToUpload) return
 
       let imageName: string | undefined | null = undefined
@@ -226,6 +232,7 @@ export default function Chats({route}: ChatsProps) {
         imageUrl,
         videoName,
         videoUrl,
+        edited:false,
         timeSent:serverTimestamp()
       })
       setImageToUpload(undefined)
@@ -295,6 +302,8 @@ export default function Chats({route}: ChatsProps) {
     const [showMessageOptions, setShowMessageOptions] = useState<boolean>(false)
     // The variable which will hold the document id of the message the user wants to delete
     const [messageToDelete, setMessageToDelete] = useState<messageToDelete | undefined>(undefined)
+    const [messageToEdit, setMessageToEdit] = useState<messageToEdit | undefined>(undefined)
+    const [editingMessage, setEditingMessage] = useState<boolean>(false)
 
         // BackHandler function to prevent the default action which is to take the user back to the room selection screen
         BackHandler.addEventListener('hardwareBackPress', () => {
@@ -334,8 +343,33 @@ export default function Chats({route}: ChatsProps) {
           await deleteDoc(messageDocRef)
 
           setMessageToDelete(undefined)
+          setMessageToEdit(undefined)
         }
-        
+
+        function handleEditPress(){
+          setNewMessage(messageToEdit?.messageContent as string)
+          setEditingMessage(true)
+          setShowMessageOptions(false)
+        }
+
+        function cancelEdit(){
+          setNewMessage("")
+          setEditingMessage(false)
+        }
+
+        async function updateMessage(){
+          setEditingMessage(false)
+
+          if(newMessage === messageToEdit?.messageContent){
+            setNewMessage('')
+            return
+          }
+          const editedMessage = newMessage
+          setNewMessage('')
+          const messageDocRef = doc(db, 'messages', messageToEdit?.messageDocId as string)
+          await updateDoc(messageDocRef, {message:editedMessage, edited:true})
+        }
+
   return (
     <SafeAreaView style={styles.chatsWrapper}>
       {/* Spinner */}
@@ -364,14 +398,14 @@ export default function Chats({route}: ChatsProps) {
 
         {/* Edit and delete options */}
           {showMessageOptions && 
-            <View style={styles.messageOptionsWrapper}>
-              <View style={styles.messageOptions}>
-                <Pressable style={({pressed}) => [styles.messageOptionsBtns, pressed ? {backgroundColor:colors.lightGray} : {}]}><Text style={styles.messageOptionsText}>Edit</Text></Pressable>
-                <Pressable style={({pressed}) => [styles.messageOptionsBtns, pressed ? {backgroundColor:colors.lightGray} : {}]} onPress={deleteMessage}><Text style={styles.messageOptionsText}>Delete</Text></Pressable>
-              </View>
-            </View>
+              <Pressable style={styles.messageOptionsWrapper} onPress={() => setShowMessageOptions(false)}>
+                <View style={styles.messageOptions}>
+                  <Pressable style={({pressed}) => [styles.messageOptionsBtns, pressed ? {backgroundColor:colors.lightGray} : {}, {borderBottomColor:'white', borderWidth:1}]} onPress={handleEditPress}><Text style={styles.messageOptionsText}>Edit</Text></Pressable>
+                  <Pressable style={({pressed}) => [styles.messageOptionsBtns, pressed ? {backgroundColor:colors.lightGray} : {}]} onPress={deleteMessage}><Text style={styles.messageOptionsText}>Delete</Text></Pressable>
+                </View>
+              </Pressable>
+          }
 
-        }
       <View style={[{height: !fileSelected ? '91%' : '79%'}, isKeyboardVisible ? {height: dvh / 1.2} : {}]}>
         <View>
           <FlatList 
@@ -381,8 +415,8 @@ export default function Chats({route}: ChatsProps) {
             onScroll={({nativeEvent}) => {
               flatListYAxis.current = nativeEvent.contentOffset.y
               if(nativeEvent.contentOffset.y === 0 && unreadNotifValue.current > 20) moveUnreadNotif.setValue(20)}}
-          keyExtractor={message => message.docId} renderItem={({item}) => (
-              <Message messageDoc={item} selectedRoom={route.params.roomNumber.toString()} setMediaToViewInFullscreen={setMediaToViewInFullscreen} setShowMessageOptions={setShowMessageOptions} setMessageToDelete={setMessageToDelete} key={item.docId}/>
+            keyExtractor={message => message.docId} renderItem={({item}) => (
+              <Message messageDoc={item} selectedRoom={route.params.roomNumber.toString()} setMediaToViewInFullscreen={setMediaToViewInFullscreen} setShowMessageOptions={setShowMessageOptions} setMessageToDelete={setMessageToDelete} setMessageToEdit={setMessageToEdit} key={item.docId}/>
         )}/>
         </View>
       </View>
@@ -403,6 +437,15 @@ export default function Chats({route}: ChatsProps) {
               <View style={[styles.progressBar2, {width:videoUploadProgress}]}></View>
             </View>
           </View>
+        }
+        {
+          editingMessage && 
+            <View style={[styles.editingMessageNotif, {bottom: !isKeyboardVisible ? '8.5%' : '10%'}]}>
+              <Pressable onPress={cancelEdit}style={({pressed}) => [{padding:5, borderRadius:10},{backgroundColor: pressed ? 'rgba(255, 255, 255, .2)' : 'transparent'}]}>
+                <Image source={require('../images/x-mark.png')} style={{width:25, height:25}}/>
+              </Pressable>
+              <Text style={{color:'white', textAlign:'center', fontSize:18}}>Editing Message</Text>
+            </View>
         }
       <View style={[styles.messageForm, isKeyboardVisible ? {marginBottom:15} : {}]}>
             <Pressable onPress={selectMedia} style={({pressed}) => [{backgroundColor: pressed ? 'rgba(0, 0, 0, .2)' : 'transparent'}, styles.addFileBtn]}><Image source={require('../images/plus.png')} style={styles.plusIcon}/></Pressable>
@@ -564,23 +607,37 @@ const styles = StyleSheet.create({
         top:0,
         left:0,
         justifyContent:'flex-end',
-        alignItems:'center'
+        alignItems:'center',
       },
       messageOptions:{
         width:dvw,
         height:dvh / 7,
-        marginBottom:'25%',
-        justifyContent:'space-around'
+        marginBottom:'19%',
+        justifyContent:'space-around',
+        borderColor:'white',
+        borderWidth:1,
+        borderBottomLeftRadius:20,
+        borderBottomRightRadius:20,
+        backgroundColor:colors.darkGray,
       },
       messageOptionsBtns:{
         height:'50%',
-        borderColor:'white',
-        borderWidth:1,
         justifyContent:'center',
-        backgroundColor:colors.darkGray,
       },
       messageOptionsText:{
         fontSize:24,
-        textAlign:'center'
+        textAlign:'center',
+        color:'white'
+      },
+      editingMessageNotif:{
+        width:dvw / 2,
+        height:35,
+        position:'absolute',
+        left: dvw / 4,
+        backgroundColor:colors.lightGray,
+        alignItems:'center',
+        justifyContent:'space-around',
+        borderRadius:8,
+        flexDirection:'row',
       }
 })
