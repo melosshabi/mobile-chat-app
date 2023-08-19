@@ -11,7 +11,6 @@ export default function OthersProfile({route}:ProfileProps) {
   navigation.setOptions({title:route.params.displayName})
 
   BackHandler.addEventListener('hardwareBackPress', () => {
-    console.log("Pressed back")
     navigation.navigate("Chats", {roomNumber: route.params.selectedRoom})
     return true
   })

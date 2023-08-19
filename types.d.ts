@@ -3,7 +3,7 @@ type componentProps = {
     Chats:{roomNumber: number}
     SignIn:undefined
     SignUp:undefined
-    UserProfile:undefined
+    UserProfile:{fromChats:boolean, selectedRoom:number} | undefined
     OthersProfile:{pictureUrl:string, displayName:string, selectedRoom:string}
   }
 
@@ -35,5 +35,13 @@ type mediaToViewInFullscreen = {
 
 type messageComponentProps = {
     messageDoc:messageDocType,
-    selectedRoom:string
+    selectedRoom:string,
+    setMediaToViewInFullscreen:React.Dispatch<React.SetStateAction<mediaToViewInFullscreen | null>>,
+    setShowMessageOptions:React.Dispatch<React.SetStateAction<boolean>>,
+    setMessageToDelete:React.Dispatch<React.SetStateAction<messageToDelete | undefined>>
+}
+type messageToDelete = {
+  messageId:string,
+  imageName:string | null,
+  videoName:string | null
 }

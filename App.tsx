@@ -59,7 +59,7 @@ export default function App() {
         <Drawer.Screen name="RoomSelector" component={RoomSelector} initialParams={{fromSignUp: false}} options={{unmountOnBlur:true, title:"Room Selector"}}/>
         <Drawer.Screen name="SignIn" component={SignIn} options={{title:"Sign In", unmountOnBlur:true}}/>
         <Drawer.Screen name="SignUp" component={SignUp} options={{title:"Sign Up", unmountOnBlur:true}}/>
-        <Drawer.Screen name="UserProfile" component={UserProfile} options={{title:"My Profile"}}/>
+        <Drawer.Screen name="UserProfile" component={UserProfile} initialParams={{fromChats:false}} options={{title:"My Profile"}}/>
         <Drawer.Screen name="Chats" component={Chats} options={{unmountOnBlur:true}}/>
         <Drawer.Screen name="OthersProfile" component={OthersProfile} options={{unmountOnBlur:true}}/>
       </Drawer.Navigator>

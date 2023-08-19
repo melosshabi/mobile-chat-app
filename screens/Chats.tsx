@@ -1,14 +1,16 @@
-import { Image, Pressable, StyleSheet, Text, TextInput, View, Keyboard, Dimensions, Animated, Easing, SafeAreaView, FlatList, VirtualizedList } from 'react-native'
+import { Image, Pressable, StyleSheet, Text, TextInput, View, Keyboard, Dimensions, Animated, Easing, SafeAreaView, FlatList, VirtualizedList, BackHandler, Alert } from 'react-native'
 import React, { useEffect, useRef, useState } from 'react'
 import { DrawerScreenProps } from '@react-navigation/drawer'
 import { useNavigation } from '@react-navigation/native'
 import colors from '../colors'
 // Firebase
-import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, where } from 'firebase/firestore'
-import { getDownloadURL, ref, uploadBytes, uploadBytesResumable } from 'firebase/storage'
+import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp, where } from 'firebase/firestore'
+import { deleteObject, getDownloadURL, ref, uploadBytes, uploadBytesResumable } from 'firebase/storage'
 import { auth, db, storage } from '../firebase/firebasbe-config'
 import { launchImageLibrary } from 'react-native-image-picker'
 import Message from '../components/Message'
+import RNFetchBlob from 'rn-fetch-blob'
+import VideoPlayer from 'react-native-video-player'
 
 type ChatsProps = DrawerScreenProps<componentProps, 'Chats'>
 
@@ -110,14 +112,13 @@ export default function Chats({route}: ChatsProps) {
                           month = "";
                       }
 
-                      messages.push({message:doc.data().message, senderID:doc.data().senderID, senderName:doc.data().senderName, 
+                      messages.unshift({message:doc.data().message, senderID:doc.data().senderID, senderName:doc.data().senderName, 
                         senderProfilePicture:doc.data().senderProfilePicture, roomSentTo:doc.data().roomSentTo, 
                         imageName:doc.data().imageName, imageUrl:doc.data().imageUrl, videoName:doc.data().videoName, videoUrl: doc.data().videoUrl,
                         dateSent:`${day} ${month} ${year}`, timeSent:`${hours}:${minutes}`, docId:doc.id})
                     }
-
-                    const reversedArr = messages.reverse()
-                    setMessages(reversedArr)
+                    
+                    setMessages(messages)
                     setShowSpinner(false)
                 })
             })
@@ -227,6 +228,49 @@ export default function Chats({route}: ChatsProps) {
         videoUrl,
         timeSent:serverTimestamp()
       })
+      setImageToUpload(undefined)
+      setVideoToUpload(undefined)
+    }
+    
+    const [mediaToViewInFullscreen, setMediaToViewInFullscreen] = useState<mediaToViewInFullscreen | null>(null)
+
+    function toggleFullscreenMedia(newValue:mediaToViewInFullscreen | null){
+      if(newValue === null) {
+        navigation.setOptions({headerShown:true})
+        setMediaToViewInFullscreen(null)
+        return
+      }
+      navigation.setOptions({headerShown:false})
+      setMediaToViewInFullscreen(newValue)
+    }
+
+    async function downloadMedia(){
+      const date = new Date()
+      if(mediaToViewInFullscreen?.imageUrl){
+        const pictureDir = RNFetchBlob.fs.dirs.PictureDir
+        RNFetchBlob.config({
+          addAndroidDownloads:{
+            useDownloadManager:true,
+            mime:'image',
+            path:`${pictureDir}/${Math.floor(date.getTime() + date.getSeconds() / 2)}.jpg`,
+            description:"Image download",
+            notification:true,
+            mediaScannable:true
+          }
+        }).fetch('GET', mediaToViewInFullscreen.imageUrl)
+      }else if(mediaToViewInFullscreen?.videoUrl){
+        const videoDir = RNFetchBlob.fs.dirs.DownloadDir
+        RNFetchBlob.config({
+          addAndroidDownloads:{
+            useDownloadManager:true,
+            mime:'video',
+            path:`${videoDir}/Mela's Chat App/${Math.floor(date.getTime() + date.getSeconds() / 2)}.mp4`,
+            description:"Video download",
+            notification:true,
+            mediaScannable:true
+          }
+        }).fetch('GET', mediaToViewInFullscreen?.videoUrl)
+      }
     }
 
     // Variable to animate the unread messages notif
@@ -248,6 +292,50 @@ export default function Chats({route}: ChatsProps) {
 
     const flatListYAxis = useRef(0)
 
+    const [showMessageOptions, setShowMessageOptions] = useState<boolean>(false)
+    // The variable which will hold the document id of the message the user wants to delete
+    const [messageToDelete, setMessageToDelete] = useState<messageToDelete | undefined>(undefined)
+
+        // BackHandler function to prevent the default action which is to take the user back to the room selection screen
+        BackHandler.addEventListener('hardwareBackPress', () => {
+          if(mediaToViewInFullscreen){
+            setMediaToViewInFullscreen(null)
+            return true
+          }
+          if(showMessageOptions){
+            setShowMessageOptions(false)
+            return true
+          }
+          Alert.alert("Are you sure you want to leave the room?", "", [
+            {
+            text:"No",
+          },
+          {
+            text:"Yes", onPress: () => navigation.navigate("RoomSelector", undefined)
+          }
+          ])
+          return true
+        })
+
+        async function deleteMessage(){
+          
+          setShowMessageOptions(false)
+
+          if(messageToDelete?.imageName){
+            const imageRef = ref(storage, `MessagesImages/${messageToDelete.imageName}`)
+            await deleteObject(imageRef)
+          }
+          if(messageToDelete?.videoName){
+            const videoRef = ref(storage, `MessagesVideos/${messageToDelete.videoName}`)
+            await deleteObject(videoRef)
+          }
+
+          const messageDocRef = doc(db, 'messages', messageToDelete?.messageId as string)
+          await deleteDoc(messageDocRef)
+
+          setMessageToDelete(undefined)
+        }
+        
   return (
     <SafeAreaView style={styles.chatsWrapper}>
       {/* Spinner */}
@@ -255,7 +343,35 @@ export default function Chats({route}: ChatsProps) {
       <View style={styles.loadingWrapper}>
         <Animated.Image style={[styles.loadingImage, {transform:[{rotate:spin}]}]} source={require('../images/loading.png')}/>
       </View>}
-      
+      {/* Fullscreen Media */}
+      {mediaToViewInFullscreen &&
+            <Pressable style={styles.fullscreenMediaWrapper}>
+              {/* crossDownload is the styling object for the cross and download icons */}
+              {/* The button that closes the fullscreen */}
+              <Pressable onPress={() => toggleFullscreenMedia(null)} style={({pressed}) => [styles.closeFullscreenMediaBtn, pressed ? {backgroundColor:'rgba(255, 255, 255, .1)'} : {}]}><Image style={styles.crossDownload} source={require('../images/cross.png')}/></Pressable>
+              {/* Download button */}
+              <Pressable onPress={downloadMedia} style={({pressed}) => [styles.downloadFullscreenmediaBtn, pressed ? {backgroundColor:'rgba(255, 255, 255, .1)'} : {}]}><Image style={styles.crossDownload} source={require("../images/download.png")}/></Pressable>
+              <View style={styles.fullscreenMediaWrapper}>
+                {mediaToViewInFullscreen?.imageUrl && <Image style={styles.fullscreenImage} source={{uri:mediaToViewInFullscreen.imageUrl}}/>}
+                {mediaToViewInFullscreen?.videoUrl && 
+                  <View style={styles.fullscreenVideoWrapper}>
+                    <VideoPlayer style={styles.fullscreenVideo} video={{uri:mediaToViewInFullscreen.videoUrl}} disableControlsAutoHide pauseOnPress/>
+                  </View>
+                }
+              </View>
+            </Pressable>
+        }
+
+        {/* Edit and delete options */}
+          {showMessageOptions && 
+            <View style={styles.messageOptionsWrapper}>
+              <View style={styles.messageOptions}>
+                <Pressable style={({pressed}) => [styles.messageOptionsBtns, pressed ? {backgroundColor:colors.lightGray} : {}]}><Text style={styles.messageOptionsText}>Edit</Text></Pressable>
+                <Pressable style={({pressed}) => [styles.messageOptionsBtns, pressed ? {backgroundColor:colors.lightGray} : {}]} onPress={deleteMessage}><Text style={styles.messageOptionsText}>Delete</Text></Pressable>
+              </View>
+            </View>
+
+        }
       <View style={[{height: !fileSelected ? '91%' : '79%'}, isKeyboardVisible ? {height: dvh / 1.2} : {}]}>
         <View>
           <FlatList 
@@ -266,7 +382,7 @@ export default function Chats({route}: ChatsProps) {
               flatListYAxis.current = nativeEvent.contentOffset.y
               if(nativeEvent.contentOffset.y === 0 && unreadNotifValue.current > 20) moveUnreadNotif.setValue(20)}}
           keyExtractor={message => message.docId} renderItem={({item}) => (
-              <Message messageDoc={item} selectedRoom={route.params.roomNumber.toString()}/>
+              <Message messageDoc={item} selectedRoom={route.params.roomNumber.toString()} setMediaToViewInFullscreen={setMediaToViewInFullscreen} setShowMessageOptions={setShowMessageOptions} setMessageToDelete={setMessageToDelete} key={item.docId}/>
         )}/>
         </View>
       </View>
@@ -390,5 +506,81 @@ const styles = StyleSheet.create({
       height:'100%',
       backgroundColor:colors.darkGray,
       borderRadius:12
-    }
+    },
+    fullscreenMediaWrapper:{
+        height:dvh,
+        width:dvw,
+        position:'absolute',
+        top:0,
+        left:0,
+        backgroundColor:'rgba(0, 0, 0, .8)',
+        zIndex:1,
+        justifyContent:'center',
+        alignItems:'center'
+      },
+      fullscreenImage:{
+        width:300,
+        height:300
+      },
+      fullscreenVideoWrapper:{
+        width:'80%',
+        height:'80%',
+        justifyContent:'center',
+        alignItems:'center',
+      },
+      fullscreenVideo:{
+        minWidth: dvw / 1.3,
+        minHeight: dvw / 1.3,
+        borderColor:'white'
+      },
+      closeFullscreenMediaBtn:{
+        width:70,
+        height:70,
+        position:'absolute',
+        top:10,
+        left:10,
+        zIndex:2,
+        borderRadius:50,
+      },
+      crossDownload:{
+        width:70,
+        height:70
+      },
+      downloadFullscreenmediaBtn:{
+        width:70,
+        height:70,
+        position:'absolute',
+        top:10,
+        right:10,
+        zIndex:2,
+        borderRadius:50
+      },
+      messageOptionsWrapper:{
+        height:dvh,
+        width:dvw,
+        backgroundColor:'rgba(0, 0, 0, .9)',
+        position:'absolute',
+        zIndex:19,
+        top:0,
+        left:0,
+        justifyContent:'flex-end',
+        alignItems:'center'
+      },
+      messageOptions:{
+        width:dvw,
+        height:dvh / 7,
+        marginBottom:'25%',
+        justifyContent:'space-around'
+      },
+      messageOptionsBtns:{
+        height:'50%',
+        borderColor:'white',
+        borderWidth:1,
+        justifyContent:'center',
+        backgroundColor:colors.darkGray,
+      },
+      messageOptionsText:{
+        fontSize:24,
+        textAlign:'center'
+      }
 })

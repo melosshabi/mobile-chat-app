@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, Image, Pressable, Alert } from 'react-native'
+import { StyleSheet, Text, View, Image, Pressable, Alert, BackHandler } from 'react-native'
 import React, { useEffect, useState } from 'react'
 // Colors
 import colors from '../colors'
@@ -11,8 +11,11 @@ import { launchImageLibrary } from 'react-native-image-picker'
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage'
 import { sendPasswordResetEmail, signOut, updateEmail, updateProfile } from 'firebase/auth'
 import Snackbar from 'react-native-snackbar'
+import { DrawerScreenProps } from '@react-navigation/drawer'
 
-export default function UserProfile() {
+type UserProfileProps = DrawerScreenProps<componentProps, 'UserProfile'>
+
+export default function UserProfile({route}: UserProfileProps) {
 
   const navigation = useNavigation()
 
@@ -159,6 +162,13 @@ export default function UserProfile() {
       }, 6000)
     })
   }
+
+  BackHandler.addEventListener('hardwareBackPress', () => {
+    if(route.params?.fromChats){
+      navigation.navigate("Chats", {roomNumber: route.params.selectedRoom})
+    }
+    return true
+  })
 
   return (
     <View style={styles.userProfile}>

@@ -7,16 +7,11 @@ import { TextInput } from 'react-native-gesture-handler'
 import { useNavigation } from '@react-navigation/native'
 import { auth } from '../firebase/firebasbe-config'
 
-export type HomeProps = DrawerScreenProps<componentProps, 'RoomSelector'>
+export type RoomSelectorProps = DrawerScreenProps<componentProps, 'RoomSelector'>
 
-type Props = {
-  Chats: {roomNumber: number};
-  SignIn:undefined
-}
+export default function RoomSelector({route}: RoomSelectorProps) {
 
-export default function RoomSelector({route}: HomeProps) {
-
-  const navigation = useNavigation<DrawerNavigationProp<Props>>()
+  const navigation = useNavigation<DrawerNavigationProp<componentProps>>()
   
   const [selectedRoom, setSelectedRoom] = useState<string>("")
 
