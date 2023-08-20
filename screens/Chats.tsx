@@ -119,9 +119,9 @@ export default function Chats({route}: ChatsProps) {
                     }
                     
                     setMessages(messages)
-                    setShowSpinner(false)
                 })
             })
+            setShowSpinner(false)
         }
 
         fetchMessages()
