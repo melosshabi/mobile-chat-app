@@ -12,6 +12,7 @@ import { getDownloadURL, ref, uploadBytes } from 'firebase/storage'
 import { sendPasswordResetEmail, signOut, updateEmail, updateProfile } from 'firebase/auth'
 import Snackbar from 'react-native-snackbar'
 import { DrawerScreenProps } from '@react-navigation/drawer'
+import RNFetchBlob from 'rn-fetch-blob'
 
 type UserProfileProps = DrawerScreenProps<componentProps, 'UserProfile'>
 
@@ -163,6 +164,23 @@ export default function UserProfile({route}: UserProfileProps) {
     })
   }
 
+  // This function downloads the current profile picture url to the user's device
+  async function downloadCurrentImage(){
+    const date = new Date()
+    const pictureDir = RNFetchBlob.fs.dirs.PictureDir
+
+    RNFetchBlob.config({
+      addAndroidDownloads:{
+        useDownloadManager : true,
+        mime:'image',
+        path:`${pictureDir}/${Math.floor(date.getTime() + date.getSeconds() / 2)}.jpg`,
+        description:"Profile Picture",
+        notification:true,
+        mediaScannable:true
+      }
+    }).fetch('GET', auth.currentUser?.photoURL as string)
+  }
+
   BackHandler.addEventListener('hardwareBackPress', () => {
     if(route.params?.fromChats){
       navigation.navigate("Chats", {roomNumber: route.params.selectedRoom})
@@ -181,7 +199,8 @@ export default function UserProfile({route}: UserProfileProps) {
         </View>
         <View style={styles.updateProfilePictureWrapper}>
           <Pressable style={styles.selectNewImageBtn}><Text style={{color:'white', fontSize:16}} onPress={selectImage}>Select new picture</Text></Pressable>
-          { newPictureSelected && <Pressable style={[styles.selectNewImageBtn, uploadInProgress ? styles.inputsDisabled : {}]} onPress={updateProfilePicture} disabled={uploadInProgress}><Text style={{color:'white', fontSize:16}}>{updateState}</Text></Pressable>}
+          {newPictureSelected && <Pressable style={[styles.selectNewImageBtn, uploadInProgress ? styles.inputsDisabled : {}]} onPress={updateProfilePicture} disabled={uploadInProgress}><Text style={{color:'white', fontSize:16}}>{updateState}</Text></Pressable>}
+          {!newPictureSelected && <Pressable style={[styles.selectNewImageBtn]} onPress={downloadCurrentImage}><Text style={{color:'white'}}>Download Current Picture</Text></Pressable>}
         </View>
         </View>
       </View>
@@ -245,7 +264,7 @@ const styles = StyleSheet.create({
   },
   updateProfilePictureWrapper:{
     height:'80%',
-    width:'50%',
+    width:'55%',
     marginTop:'5%',
     alignItems:'center',
     justifyContent:'space-around',
