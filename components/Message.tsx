@@ -4,12 +4,11 @@ import CustomVideo from "./CustomVideo"
 import colors from "../colors"
 import { auth } from "../firebase/firebasbe-config"
 import { useNavigation } from "@react-navigation/native"
-import { TextInput } from "react-native-gesture-handler"
 
 const dvw = Dimensions.get('window').width
 const dvh = Dimensions.get('window').height
 
-const Message = memo(function Message({messageDoc, selectedRoom, setMediaToViewInFullscreen, setShowMessageOptions, setMessageToDelete, setMessageToEdit}:messageComponentProps){
+const Message = memo(function Message({messageDoc, selectedRoom, setMediaToViewInFullscreen, setShowMessageOptions, handleMessageToDeleteState, handleMessageToEditState}:messageComponentProps){
     const navigation = useNavigation()
 
     function handleProfileNavigation(senderId:string, pictureUrl:string, displayName:string){
@@ -31,12 +30,12 @@ const Message = memo(function Message({messageDoc, selectedRoom, setMediaToViewI
           <Pressable onLongPress={() => {
             if(messageDoc.senderID === auth.currentUser?.uid){
               setShowMessageOptions(true)
-              setMessageToDelete({
+              handleMessageToDeleteState({
                 messageId:messageDoc.docId,
                 imageName:!messageDoc.imageName ? null : messageDoc.imageName,
                 videoName:!messageDoc.videoName ? null : messageDoc.videoName,
               })
-              setMessageToEdit({
+              handleMessageToEditState({
                 messageDocId:messageDoc.docId,
                 messageContent:messageDoc.message
               })

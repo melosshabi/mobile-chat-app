@@ -39,8 +39,8 @@ type messageComponentProps = {
     selectedRoom:string,
     setMediaToViewInFullscreen:React.Dispatch<React.SetStateAction<mediaToViewInFullscreen | null>>,
     setShowMessageOptions:React.Dispatch<React.SetStateAction<boolean>>,
-    setMessageToDelete:React.Dispatch<React.SetStateAction<messageToDelete | undefined>>,
-    setMessageToEdit:React.Dispatch<React.SetStateAction<messageToEdit | undefined>>
+    handleMessageToDeleteState:(messageToDelete: messageToDelete) => void
+    handleMessageToEditState:(messageToEdit: messageToEdit) => void
 }
 
 type messageToDelete = {

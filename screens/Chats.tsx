@@ -1,5 +1,5 @@
-import { Image, Pressable, StyleSheet, Text, TextInput, View, Keyboard, Dimensions, Animated, Easing, SafeAreaView, FlatList, VirtualizedList, BackHandler, Alert } from 'react-native'
-import React, { useEffect, useRef, useState } from 'react'
+import { Image, Pressable, StyleSheet, Text, TextInput, View, Keyboard, Dimensions, Animated, Easing, SafeAreaView, FlatList, BackHandler, Alert } from 'react-native'
+import React, { useEffect, useState } from 'react'
 import { DrawerScreenProps } from '@react-navigation/drawer'
 import { useNavigation } from '@react-navigation/native'
 import colors from '../colors'
@@ -49,83 +49,81 @@ export default function Chats({route}: ChatsProps) {
             setIsKeyboardVisible(false)
         })
 
-        let mounted = true
-
         async function fetchMessages(){
-            const messagesRef = collection(db, 'messages')
-            const messagesQuery = query(messagesRef, where('roomSentTo', '==', route.params.roomNumber.toString()), orderBy('timeSent'))
-            let messages: messageDocType[] = []
-            onSnapshot(messagesQuery, snapshot => {
-                
-                snapshot.forEach(doc => {
-
-                    if(doc.data().timeSent !== null){
-
-                    const date = doc.data().timeSent.toDate()
-                    const day = date.getDate()
-                    let month;
-                    const year = date.getFullYear()
-                    let hours = date.getHours()
-                    let minutes = date.getMinutes()
-
-                    if(hours === 24) hours = "00"
-                    if(minutes.toString().length === 1) minutes = `0${minutes}`
-
-                    switch(date.getMonth()){
-                        case 0:
-                         month = "Jan";
+          const messagesRef = collection(db, 'messages')
+          const messagesQuery = query(messagesRef, where('roomSentTo', '==', route.params.roomNumber.toString()), orderBy('timeSent'))
+          
+          onSnapshot(messagesQuery, snapshot => {
+              let messages: messageDocType[] = [] 
+              console.log('snapshot', snapshot.docs)
+              snapshot.forEach(doc => {
+    
+                  if(doc.data().timeSent !== null){
+    
+                  const date = doc.data().timeSent.toDate()
+                  const day = date.getDate()
+                  let month;
+                  const year = date.getFullYear()
+                  let hours = date.getHours()
+                  let minutes = date.getMinutes()
+    
+                  if(hours === 24) hours = "00"
+                  if(minutes.toString().length === 1) minutes = `0${minutes}`
+    
+                  switch(date.getMonth()){
+                      case 0:
+                       month = "Jan";
+                        break;
+                      case 1:
+                        month = "Feb";
                           break;
-                        case 1:
-                          month = "Feb";
+                      case 2:
+                        month = "Mar";
+                          break;
+                      case 3:
+                        month = "Apr";
+                          break;
+                      case 4:
+                        month = "May";
+                          break;
+                      case 5:
+                        month = "June";
+                          break;
+                      case 6:
+                        month = "July";
+                          break;
+                      case 7:
+                        month = "Aug";
+                          break;
+                      case 8:
+                          month = "Sep";
                             break;
-                        case 2:
-                          month = "Mar";
-                            break;
-                        case 3:
-                          month = "Apr";
-                            break;
-                        case 4:
-                          month = "May";
-                            break;
-                        case 5:
-                          month = "June";
-                            break;
-                        case 6:
-                          month = "July";
-                            break;
-                        case 7:
-                          month = "Aug";
-                            break;
-                        case 8:
-                            month = "Sep";
-                              break;
-                        case 9:
-                          month = "Oct";
-                            break;
-                        case 10:
-                          month = "Nov";
-                            break;
-                        case 11:
-                          month = "Dec";
-                            break;
-                        default:
-                          month = "";
-                      }
-
-                      messages.unshift({message:doc.data().message, senderID:doc.data().senderID, senderName:doc.data().senderName, 
-                        senderProfilePicture:doc.data().senderProfilePicture, roomSentTo:doc.data().roomSentTo, 
-                        imageName:doc.data().imageName, imageUrl:doc.data().imageUrl, videoName:doc.data().videoName, videoUrl: doc.data().videoUrl,
-                        dateSent:`${day} ${month} ${year}`, timeSent:`${hours}:${minutes}`, edited:doc.data().edited, docId:doc.id, })
+                      case 9:
+                        month = "Oct";
+                          break;
+                      case 10:
+                        month = "Nov";
+                          break;
+                      case 11:
+                        month = "Dec";
+                          break;
+                      default:
+                        month = "";
                     }
-                    
-                    setMessages(messages)
-                })
-            })
-            setShowSpinner(false)
-        }
+    
+                    messages.push({message:doc.data().message, senderID:doc.data().senderID, senderName:doc.data().senderName, 
+                      senderProfilePicture:doc.data().senderProfilePicture, roomSentTo:doc.data().roomSentTo, 
+                      imageName:doc.data().imageName, imageUrl:doc.data().imageUrl, videoName:doc.data().videoName, videoUrl: doc.data().videoUrl,
+                      dateSent:`${day} ${month} ${year}`, timeSent:`${hours}:${minutes}`, edited:doc.data().edited, docId:doc.id})
+                  }
+              })
+              setMessages(messages.reverse())
+          },)
+          setShowSpinner(false)
+      }
 
         fetchMessages()
-        return () => mounted = false
+        return () => fetchMessages()
     }, [])
 
     const [newMessage, setNewMessage] = useState<string>("")
@@ -164,10 +162,10 @@ export default function Chats({route}: ChatsProps) {
     async function sendMessage(){
 
       if(editingMessage){
-        updateMessage()
+        await updateMessage()
         return
       }
-
+      console.log("Did not exit the function")
       if(!newMessage && !imageToUpload && !videoToUpload) return
 
       let imageName: string | undefined | null = undefined
@@ -259,7 +257,7 @@ export default function Chats({route}: ChatsProps) {
           addAndroidDownloads:{
             useDownloadManager:true,
             mime:'image',
-            path:`${pictureDir}/${Math.floor(date.getTime() + date.getSeconds() / 2)}.jpg`,
+            path:`${pictureDir}/Mela's Chat App/${Math.floor(date.getTime() + date.getSeconds() / 2)}.jpg`,
             description:"Image download",
             notification:true,
             mediaScannable:true
@@ -279,25 +277,6 @@ export default function Chats({route}: ChatsProps) {
         }).fetch('GET', mediaToViewInFullscreen?.videoUrl)
       }
     }
-
-    // Variable to animate the unread messages notif
-    const moveUnreadNotif = new Animated.Value(20)
-
-    const unreadNotifValue = useRef<number>(20)
-    moveUnreadNotif.addListener((state: {value:number}) =>  unreadNotifValue.current = state.value)
-
-    const unreadNotifAnim = Animated.timing(moveUnreadNotif, {
-      toValue:55,
-      duration:500,
-      easing:Easing.linear,
-      useNativeDriver: false
-    })
-
-    // useEffect(() => {
-    //   if(messages.length > prevMessagesLength.current && flatListYAxis.current > 80 && messages[0].senderID !== auth.currentUser?.uid) unreadNotifAnim.start()
-    // } ,[messages])
-
-    const flatListYAxis = useRef(0)
 
     const [showMessageOptions, setShowMessageOptions] = useState<boolean>(false)
     // The variable which will hold the document id of the message the user wants to delete
@@ -347,7 +326,7 @@ export default function Chats({route}: ChatsProps) {
         }
 
         function handleEditPress(){
-          setNewMessage(messageToEdit?.messageContent as string)
+          setNewMessage(`${messageToEdit?.messageContent}`)
           setEditingMessage(true)
           setShowMessageOptions(false)
         }
@@ -355,6 +334,14 @@ export default function Chats({route}: ChatsProps) {
         function cancelEdit(){
           setNewMessage("")
           setEditingMessage(false)
+        }
+
+        function handleMessageToEditState(messageToEdit:messageToEdit){
+          setMessageToEdit(messageToEdit)
+        }
+
+        function handleMessageToDeleteState(messageToDelete:messageToDelete){
+          setMessageToDelete(messageToDelete)
         }
 
         async function updateMessage(){
@@ -370,6 +357,9 @@ export default function Chats({route}: ChatsProps) {
           await updateDoc(messageDocRef, {message:editedMessage, edited:true})
         }
 
+        useEffect(() => {
+          console.log("messages", messages.length)
+        },[messages])
   return (
     <SafeAreaView style={styles.chatsWrapper}>
       {/* Spinner */}
@@ -411,16 +401,13 @@ export default function Chats({route}: ChatsProps) {
           <FlatList 
             style={{width:"100%"}} 
             inverted={true}
-            data={messages} 
-            onScroll={({nativeEvent}) => {
-              flatListYAxis.current = nativeEvent.contentOffset.y
-              if(nativeEvent.contentOffset.y === 0 && unreadNotifValue.current > 20) moveUnreadNotif.setValue(20)}}
+            data={messages}
             keyExtractor={message => message.docId} renderItem={({item}) => (
-              <Message messageDoc={item} selectedRoom={route.params.roomNumber.toString()} setMediaToViewInFullscreen={setMediaToViewInFullscreen} setShowMessageOptions={setShowMessageOptions} setMessageToDelete={setMessageToDelete} setMessageToEdit={setMessageToEdit} key={item.docId}/>
-        )}/>
+              <Message messageDoc={item} selectedRoom={route.params.roomNumber.toString()} setMediaToViewInFullscreen={setMediaToViewInFullscreen} setShowMessageOptions={setShowMessageOptions} handleMessageToDeleteState={handleMessageToDeleteState} handleMessageToEditState={handleMessageToEditState}/>
+        )}
+        />
         </View>
       </View>
-      <Animated.View style={[styles.unreadMessagesNotif, {bottom:moveUnreadNotif}]}><Text style={{color:'white', fontSize:15, fontWeight:'bold', textAlign:'center'}}>Unread messages below</Text></Animated.View>
       { fileSelected &&
         <View style={styles.mediaPreview}>
           {imageToUpload && <Image source={{uri:imageToUpload.url}} style={{width:80, height:80}}/>}
@@ -482,15 +469,6 @@ const styles = StyleSheet.create({
         justifyContent:'space-between',
         flexDirection:'row',
         paddingVertical:5,
-    },
-    unreadMessagesNotif:{
-      backgroundColor:'red',
-      width:dvw / 1.5,
-      position:'absolute',
-      marginLeft: dvw / 6,
-      borderTopRightRadius:10,
-      borderTopLeftRadius:10,
-      zIndex:0,
     },
     addFileBtn:{
         width:60,
