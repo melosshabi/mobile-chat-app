@@ -1,7 +1,7 @@
 import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import React, { useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
-import { DrawerNavigationProp } from '@react-navigation/drawer'
+import { DrawerNavigationProp, DrawerScreenProps } from '@react-navigation/drawer'
 import colors from '../colors'
 import { Formik } from 'formik'
 import * as yup from 'yup'
@@ -10,9 +10,7 @@ import {auth, storage} from '../firebase/firebasbe-config'
 import { launchImageLibrary } from 'react-native-image-picker'
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage'
 
-type RoomSelectorProps = {
-  RoomSelector: {fromSignUp:boolean} | undefined
-}
+type RoomSelectorProps = DrawerScreenProps<componentProps, 'SignUp'>
 
 export default function SignUp() {
 
