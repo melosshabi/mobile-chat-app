@@ -55,7 +55,6 @@ export default function Chats({route}: ChatsProps) {
           
           onSnapshot(messagesQuery, snapshot => {
               let messages: messageDocType[] = [] 
-              console.log('snapshot', snapshot.docs)
               snapshot.forEach(doc => {
     
                   if(doc.data().timeSent !== null){
@@ -357,9 +356,6 @@ export default function Chats({route}: ChatsProps) {
           await updateDoc(messageDocRef, {message:editedMessage, edited:true})
         }
 
-        useEffect(() => {
-          console.log("messages", messages.length)
-        },[messages])
   return (
     <SafeAreaView style={styles.chatsWrapper}>
       {/* Spinner */}
@@ -390,8 +386,8 @@ export default function Chats({route}: ChatsProps) {
           {showMessageOptions && 
               <Pressable style={styles.messageOptionsWrapper} onPress={() => setShowMessageOptions(false)}>
                 <View style={styles.messageOptions}>
-                  <Pressable style={({pressed}) => [styles.messageOptionsBtns, pressed ? {backgroundColor:colors.lightGray} : {}, {borderBottomColor:'white', borderWidth:1}]} onPress={handleEditPress}><Text style={styles.messageOptionsText}>Edit</Text></Pressable>
-                  <Pressable style={({pressed}) => [styles.messageOptionsBtns, pressed ? {backgroundColor:colors.lightGray} : {}]} onPress={deleteMessage}><Text style={styles.messageOptionsText}>Delete</Text></Pressable>
+                  <Pressable style={({pressed}) => [styles.messageOptionsBtns, pressed ? {backgroundColor:colors.lighterBlack} : {}, {borderBottomColor:'white', borderWidth:1}]} onPress={handleEditPress}><Text style={styles.messageOptionsText}>Edit</Text></Pressable>
+                  <Pressable style={({pressed}) => [styles.messageOptionsBtns, pressed ? {backgroundColor:colors.lighterBlack} : {}]} onPress={deleteMessage}><Text style={styles.messageOptionsText}>Delete</Text></Pressable>
                 </View>
               </Pressable>
           }
@@ -446,8 +442,7 @@ export default function Chats({route}: ChatsProps) {
 const styles = StyleSheet.create({
     chatsWrapper:{
         height:'100%',
-        backgroundColor:colors.darkGray,
-        justifyContent:'space-between'
+        backgroundColor:colors.black,
     },
     loadingWrapper:{
       width:dvw,
@@ -465,10 +460,12 @@ const styles = StyleSheet.create({
     messageForm:{
         height:'8%',
         width:'100%',
-        backgroundColor:colors.lightGray,
+        backgroundColor:colors.black,
         justifyContent:'space-between',
         flexDirection:'row',
         paddingVertical:5,
+        borderTopColor:'white',
+        borderTopWidth:1
     },
     addFileBtn:{
         width:60,
@@ -596,7 +593,7 @@ const styles = StyleSheet.create({
         borderWidth:1,
         borderBottomLeftRadius:20,
         borderBottomRightRadius:20,
-        backgroundColor:colors.darkGray,
+        backgroundColor:colors.black,
       },
       messageOptionsBtns:{
         height:'50%',

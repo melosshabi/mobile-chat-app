@@ -143,7 +143,7 @@ export default function SignUp() {
 const styles = StyleSheet.create({
     signUp:{
         height:'100%',
-        backgroundColor:colors.lightGray
+        backgroundColor:colors.black
     },
     headingText:{
         fontSize:35,
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
         width:"45%",
         paddingVertical:12 ,
         paddingHorizontal:15,
-        backgroundColor:colors.darkGray,
+        backgroundColor:colors.lighterBlack,
         borderWidth:1,
         borderColor:'white',
         borderRadius:8,
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
       justifyContent:'center'
     },
     pfpBtn:{
-      backgroundColor:colors.darkGray,
+      backgroundColor:colors.lighterBlack,
       alignSelf:'center',
       marginTop:20,
       marginBottom:5,

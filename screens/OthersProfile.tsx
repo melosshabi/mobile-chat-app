@@ -28,12 +28,12 @@ export default function OthersProfile({route}:ProfileProps) {
 const styles = StyleSheet.create({
     wrapper:{
         height:'100%',
-        backgroundColor:colors.darkGray,
+        backgroundColor:colors.black,
         alignItems:'center',
     },
     nameImageWrapper:{
         width:'80%',
-        backgroundColor:colors.lightGray,
+        backgroundColor:colors.lighterBlack,
         alignItems:'center',
         marginTop:100,
         borderRadius:8,

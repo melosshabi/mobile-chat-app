@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     color:'white'
   },
   signIn:{
-    backgroundColor:colors.lightGray,
+    backgroundColor:colors.black,
     height:'100%',
   },
   form:{
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     width:"45%",
     paddingVertical:12 ,
     paddingHorizontal:15,
-    backgroundColor:colors.darkGray,
+    backgroundColor:colors.lighterBlack,
     borderWidth:1,
     borderColor:'white',
     borderRadius:8,

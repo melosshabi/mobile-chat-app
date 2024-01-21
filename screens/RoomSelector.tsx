@@ -64,14 +64,14 @@ export default function RoomSelector({route}: RoomSelectorProps) {
 const styles = StyleSheet.create({
   home:{
     height:'100%',
-    backgroundColor:colors.darkGray,
+    backgroundColor:colors.black,
     justifyContent:'center',
     alignItems:'center'
   },
   roomSelectionForm:{
     width:'90%',
     height:'40%',
-    backgroundColor:colors.lightGray,
+    backgroundColor:colors.lighterBlack,
     alignItems:'center',
     justifyContent:'space-around',
     elevation:5,
@@ -97,9 +97,11 @@ const styles = StyleSheet.create({
     color:'white'
   },
   joinRoomBtn:{
-    backgroundColor:colors.darkGray,
+    backgroundColor:colors.black,
     paddingVertical:10,
     paddingHorizontal:20,
-    borderRadius:8
+    borderRadius:8,
+    borderWidth:1,
+    borderColor:'white'
   }
 })

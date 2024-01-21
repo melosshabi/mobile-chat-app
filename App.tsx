@@ -55,7 +55,7 @@ export default function App() {
 
   return (
     <NavigationContainer>
-      <Drawer.Navigator screenOptions={{drawerStyle:{backgroundColor:colors.darkGray, shadowOffset:{width:1, height:1},shadowColor:'rgb(255, 255, 255)', shadowRadius:0, elevation:20,}, drawerActiveBackgroundColor:"rgba(255, 255, 255 .2)", headerStyle:{backgroundColor:colors.lightGray}, headerTitleStyle:{color:"white"}, headerTintColor:'white'}} drawerContent={props => drawerContent(props)}>
+      <Drawer.Navigator screenOptions={{drawerStyle:{backgroundColor:colors.black, shadowOffset:{width:1, height:1},shadowColor:'rgb(255, 255, 255)', shadowRadius:0, elevation:20,}, drawerActiveBackgroundColor:"rgba(255, 255, 255 .2)", headerStyle:{backgroundColor:colors.black}, headerTitleStyle:{color:"white"}, headerTintColor:'white'}} drawerContent={props => drawerContent(props)}>
         <Drawer.Screen name="RoomSelector" component={RoomSelector} initialParams={{fromSignUp: false}} options={{unmountOnBlur:true, title:"Room Selector"}}/>
         <Drawer.Screen name="SignIn" component={SignIn} options={{title:"Sign In", unmountOnBlur:true}}/>
         <Drawer.Screen name="SignUp" component={SignUp} options={{title:"Sign Up", unmountOnBlur:true}}/>
@@ -71,7 +71,6 @@ const styles = StyleSheet.create({
   customDrawer:{
     height:'100%',
     justifyContent:'space-between',
-    
   },
   text:{
     color:'white',

@@ -220,9 +220,9 @@ export default function UserProfile({route}: UserProfileProps) {
         </View>
         
         <View>
-          { !showSaveBtn ? <Pressable style={({pressed}) => [styles.resetPasswordBtn, {backgroundColor: pressed ? colors.darkGray2 : colors.darkGray}]} onPress={enableInputs}><Text style={[styles.text, {fontSize:18, textAlign:'center'}]}>Edit Account Information</Text></Pressable> : 
-            <Pressable style={({pressed}) => [styles.resetPasswordBtn, {backgroundColor: pressed ? colors.darkGray2 : colors.darkGray}, updateInProgress ? styles.inputsDisabled : {}]} onPress={updateAccount} disabled={updateInProgress}><Text style={[styles.text, {fontSize:18, textAlign:'center'}]}>{!updateInProgress ? 'Save Changes' : 'Saving Changes'}</Text></Pressable>}
-          <Pressable style={({pressed}) => [styles.resetPasswordBtn, {backgroundColor: pressed ? colors.darkGray2 : colors.darkGray}]} onPress={resetPassword}><Text style={[styles.text, {fontSize:18, textAlign:'center'}]}>Reset Password</Text></Pressable>
+          { !showSaveBtn ? <Pressable style={({pressed}) => [styles.accountInfoBtns, {backgroundColor: pressed ? colors.lighterBlack : colors.black}]} onPress={enableInputs}><Text style={[styles.text, {fontSize:18, textAlign:'center'}]}>Edit Account Information</Text></Pressable> : 
+            <Pressable style={({pressed}) => [styles.accountInfoBtns, {backgroundColor: pressed ? colors.lighterBlack : colors.black}, updateInProgress ? styles.inputsDisabled : {}]} onPress={updateAccount} disabled={updateInProgress}><Text style={[styles.text, {fontSize:18, textAlign:'center'}]}>{!updateInProgress ? 'Save Changes' : 'Saving Changes'}</Text></Pressable>}
+          <Pressable style={({pressed}) => [styles.accountInfoBtns, {backgroundColor: pressed ? colors.lighterBlack : colors.black}]} onPress={resetPassword}><Text style={[styles.text, {fontSize:18, textAlign:'center'}]}>Reset Password</Text></Pressable>
         </View>
 
       </View>
@@ -240,16 +240,15 @@ const styles = StyleSheet.create({
   userProfile:{
     width:'100%',
     height:'100%',
-    backgroundColor:colors.darkGray,
+    backgroundColor:colors.black,
     alignItems:'center',
     justifyContent:'space-around'
   },
   profilePictureWrapper:{
     width: '90%',
     height: '25%',
-    backgroundColor:colors.lightGray,
+    backgroundColor:colors.lighterBlack,
     marginTop:20,
-    // flexDirection:'row',
     justifyContent:'space-around',
     alignItems:'center',
     borderRadius:8,
@@ -271,7 +270,7 @@ const styles = StyleSheet.create({
   },
   selectNewImageBtn:{
     width:'90%',
-    backgroundColor:colors.darkGray,
+    backgroundColor:colors.lighterBlack,
     borderRadius:8,
     alignItems:'center',
     paddingVertical:13,
@@ -280,7 +279,7 @@ const styles = StyleSheet.create({
   },
   userInfo:{
     width:'90%',
-    backgroundColor:colors.lightGray,
+    backgroundColor:colors.lighterBlack,
     elevation:3,
     shadowColor:'white',
     borderRadius:8
@@ -300,14 +299,14 @@ const styles = StyleSheet.create({
   inputsDisabled:{
     opacity:.5
   },
-  resetPasswordBtn:{
+  accountInfoBtns:{
     width:'65%',
     alignSelf:'center',
     paddingVertical:15,
     paddingHorizontal:10,
     marginVertical:15,
     borderRadius:8,
-    backgroundColor:colors.darkGray,
+    backgroundColor:colors.black,
     elevation:3,
     shadowColor:'white'
   }
