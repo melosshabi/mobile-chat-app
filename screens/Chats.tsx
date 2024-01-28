@@ -164,7 +164,6 @@ export default function Chats({route}: ChatsProps) {
         await updateMessage()
         return
       }
-      console.log("Did not exit the function")
       if(!newMessage && !imageToUpload && !videoToUpload) return
 
       let imageName: string | undefined | null = undefined
@@ -283,6 +282,20 @@ export default function Chats({route}: ChatsProps) {
     const [messageToEdit, setMessageToEdit] = useState<messageToEdit | undefined>(undefined)
     const [editingMessage, setEditingMessage] = useState<boolean>(false)
 
+    const messageOptionsAnimVal = useState(new Animated.ValueXY({x:0, y:300}))[0]
+
+    useEffect(() =>{
+      if(showMessageOptions){
+        Animated.timing(messageOptionsAnimVal, {
+          toValue:{x:0, y:0},
+          duration:600,
+          useNativeDriver:false,
+        }).start()
+        return
+      }
+      messageOptionsAnimVal.resetAnimation()
+    }, [showMessageOptions])
+
         // BackHandler function to prevent the default action which is to take the user back to the room selection screen
         BackHandler.addEventListener('hardwareBackPress', () => {
           if(mediaToViewInFullscreen){
@@ -384,10 +397,12 @@ export default function Chats({route}: ChatsProps) {
 
         {/* Edit and delete options */}
           {showMessageOptions && 
-              <Pressable style={styles.messageOptionsWrapper} onPress={() => setShowMessageOptions(false)}>
-                <View style={styles.messageOptions}>
-                  <Pressable style={({pressed}) => [styles.messageOptionsBtns, pressed ? {backgroundColor:colors.lighterBlack} : {}, {borderBottomColor:'white', borderWidth:1}]} onPress={handleEditPress}><Text style={styles.messageOptionsText}>Edit</Text></Pressable>
-                  <Pressable style={({pressed}) => [styles.messageOptionsBtns, pressed ? {backgroundColor:colors.lighterBlack} : {}]} onPress={deleteMessage}><Text style={styles.messageOptionsText}>Delete</Text></Pressable>
+              <Pressable style={styles.messageOptionsScreen} onPress={() => setShowMessageOptions(false)}>
+                <View style={styles.messageOptionsParent}>
+                  <Animated.View style={[styles.messageOptions, messageOptionsAnimVal.getLayout()]}>
+                    <Pressable style={({pressed}) => [styles.messageOptionsBtns, pressed ? {backgroundColor:colors.lighterBlack} : {}, {borderBottomColor:'white', borderWidth:1}]} onPress={handleEditPress}><Text style={styles.messageOptionsText}>Edit</Text></Pressable>
+                    <Pressable style={({pressed}) => [styles.messageOptionsBtns, pressed ? {backgroundColor:colors.lighterBlack} : {}]} onPress={deleteMessage}><Text style={styles.messageOptionsText}>Delete</Text></Pressable>
+                  </Animated.View>
                 </View>
               </Pressable>
           }
@@ -573,21 +588,23 @@ const styles = StyleSheet.create({
         zIndex:2,
         borderRadius:50
       },
-      messageOptionsWrapper:{
-        height:dvh,
+      messageOptionsScreen:{
+        height:dvh / 1.08,
         width:dvw,
-        backgroundColor:'rgba(0, 0, 0, .9)',
+        backgroundColor:'rgba(0, 0, 0, .9)', 
         position:'absolute',
-        zIndex:19,
+        zIndex:3,
         top:0,
         left:0,
         justifyContent:'flex-end',
         alignItems:'center',
       },
+      messageOptionsParent:{
+        height:'16%',
+      },
       messageOptions:{
         width:dvw,
         height:dvh / 7,
-        marginBottom:'19%',
         justifyContent:'space-around',
         borderColor:'white',
         borderWidth:1,
